@@ -1,13 +1,13 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-const TILE = 84;
+const TILE = 96;
 const COLS = 10;
 const ROWS = 8;
 const MAP_WIDTH = COLS * TILE;
 const MAP_HEIGHT = ROWS * TILE;
 const MAP_X = Math.round((canvas.width - MAP_WIDTH) / 2);
-const MAP_Y = 510;
+const MAP_Y = 560;
 
 const STORAGE_KEY = "gardenOfGraceAssetBuildV1";
 
