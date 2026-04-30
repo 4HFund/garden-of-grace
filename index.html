@@ -2,22 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
-  />
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Garden of Grace: First Harvest</title>
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-  <link
-    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Montserrat:wght@400;500;600;700;800;900&display=swap"
-    rel="stylesheet"
-  >
-
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 
@@ -46,10 +35,7 @@
         <h1 class="cinzel-title">Garden of Grace</h1>
         <h2 class="gold-text">First Harvest</h2>
 
-        <p>
-          Restore a forgotten field, clear the weeds of worry, plant seeds of faith,
-          and grow the fruit of a renewed heart.
-        </p>
+        <p>Restore a forgotten field, clear the weeds of worry, plant seeds of faith, and grow the fruit of a renewed heart.</p>
 
         <div class="title-button-stack">
           <button id="startBtn" class="btn btn-primary metal-sheen">Start Journey</button>
@@ -72,24 +58,20 @@
         <div class="help-list">
           <div class="help-item">
             <span>01</span>
-            <p>Use the polished D-pad to move around the field.</p>
+            <p>Tap anywhere on the field to move.</p>
           </div>
-
           <div class="help-item">
             <span>02</span>
             <p>Select Faith, Peace, or Kindness from the seed selector.</p>
           </div>
-
           <div class="help-item">
             <span>03</span>
             <p>Stand on soil to plant. Water crops until they mature.</p>
           </div>
-
           <div class="help-item">
             <span>04</span>
             <p>Clear dark weeds to restore the land and increase kindness.</p>
           </div>
-
           <div class="help-item">
             <span>05</span>
             <p>Pray once per day to strengthen the garden and bring peace.</p>
@@ -107,46 +89,26 @@
           <h1 class="cinzel-title">Garden of Grace</h1>
           <p>First Harvest</p>
         </div>
-
         <button id="saveBtn" class="save-button metal-sheen">Save</button>
       </div>
     </header>
 
     <main class="game-stage-wrap">
       <section class="game-stage">
-
         <canvas id="gameCanvas" width="1080" height="1500"></canvas>
 
         <div class="hud-layer">
-
           <section class="top-hud">
             <div class="quest-pill hud-glass">
               <div class="hud-label gold-text">Current Quest</div>
-              <div id="questText" class="quest-copy">
-                Clear the weeds choking the field.
-              </div>
+              <div id="questText" class="quest-copy">Clear the weeds choking the field.</div>
             </div>
 
             <div class="stat-row">
-              <div class="stat-card hud-glass">
-                <span>Faith</span>
-                <strong id="faithStat">1</strong>
-              </div>
-
-              <div class="stat-card hud-glass">
-                <span>Peace</span>
-                <strong id="peaceStat">1</strong>
-              </div>
-
-              <div class="stat-card hud-glass">
-                <span>Kindness</span>
-                <strong id="kindnessStat">1</strong>
-              </div>
-
-              <div class="stat-card hud-glass">
-                <span>Harvest</span>
-                <strong id="harvestStat">0</strong>
-              </div>
+              <div class="stat-card hud-glass"><span>Faith</span><strong id="faithStat">1</strong></div>
+              <div class="stat-card hud-glass"><span>Peace</span><strong id="peaceStat">1</strong></div>
+              <div class="stat-card hud-glass"><span>Kindness</span><strong id="kindnessStat">1</strong></div>
+              <div class="stat-card hud-glass"><span>Harvest</span><strong id="harvestStat">0</strong></div>
             </div>
           </section>
 
@@ -155,79 +117,30 @@
               <span class="seed-dot faith-dot" aria-hidden="true"></span>
               <strong>Faith</strong>
             </button>
-
             <button class="seed-option" data-seed="peace">
               <span class="seed-dot peace-dot" aria-hidden="true"></span>
               <strong>Peace</strong>
             </button>
-
             <button class="seed-option" data-seed="kindness">
               <span class="seed-dot kindness-dot" aria-hidden="true"></span>
               <strong>Kindness</strong>
             </button>
           </section>
 
-          <section class="premium-dpad hud-glass" aria-label="Movement controls">
-            <div aria-hidden="true"></div>
-            <button id="upBtn" class="dpad-button dpad-up" aria-label="Move up">
-              <span></span>
-            </button>
-            <div aria-hidden="true"></div>
-
-            <button id="leftBtn" class="dpad-button dpad-left" aria-label="Move left">
-              <span></span>
-            </button>
-
-            <div class="dpad-center" aria-hidden="true">
-              <div></div>
-            </div>
-
-            <button id="rightBtn" class="dpad-button dpad-right" aria-label="Move right">
-              <span></span>
-            </button>
-
-            <div aria-hidden="true"></div>
-            <button id="downBtn" class="dpad-button dpad-down" aria-label="Move down">
-              <span></span>
-            </button>
-            <div aria-hidden="true"></div>
-          </section>
-
           <section id="messageBox" class="message-toast hud-glass" aria-live="polite">
             Welcome to the Heartfield. Restore what’s broken and grow in grace.
           </section>
-
         </div>
       </section>
     </main>
 
     <nav class="action-dock">
-      <button id="plantBtn" class="action-button">
-        <span class="action-icon plant-icon" aria-hidden="true"></span>
-        <strong>Plant</strong>
-      </button>
-
-      <button id="waterBtn" class="action-button">
-        <span class="action-icon water-icon" aria-hidden="true"></span>
-        <strong>Water</strong>
-      </button>
-
-      <button id="harvestBtn" class="action-button">
-        <span class="action-icon harvest-icon" aria-hidden="true"></span>
-        <strong>Harvest</strong>
-      </button>
-
-      <button id="clearBtn" class="action-button">
-        <span class="action-icon clear-icon" aria-hidden="true"></span>
-        <strong>Clear</strong>
-      </button>
-
-      <button id="prayBtn" class="action-button pray-action pray-special">
-        <span class="action-icon pray-icon" aria-hidden="true"></span>
-        <strong>Pray</strong>
-      </button>
+      <button id="plantBtn" class="action-button"><span class="action-icon plant-icon" aria-hidden="true"></span><strong>Plant</strong></button>
+      <button id="waterBtn" class="action-button"><span class="action-icon water-icon" aria-hidden="true"></span><strong>Water</strong></button>
+      <button id="harvestBtn" class="action-button"><span class="action-icon harvest-icon" aria-hidden="true"></span><strong>Harvest</strong></button>
+      <button id="clearBtn" class="action-button"><span class="action-icon clear-icon" aria-hidden="true"></span><strong>Clear</strong></button>
+      <button id="prayBtn" class="action-button pray-action pray-special"><span class="action-icon pray-icon" aria-hidden="true"></span><strong>Pray</strong></button>
     </nav>
-
   </div>
 
   <script src="game.js"></script>
