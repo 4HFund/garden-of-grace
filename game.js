@@ -1,6 +1,5 @@
 /**
  * GARDEN OF GRACE: PREMIUM V2 - FULL CONSOLIDATED EDITION
- * Fixes Applied: Restored drawCoverImage & drawContainImage functions
  */
 
 const canvas = document.getElementById("gameCanvas");
@@ -82,7 +81,6 @@ const isBlocked = (x, y) => ["void", "water", "fence"].includes(tileAt(x, y));
 const centerOfTile = (x, y) => ({ x: MAP_X + x * TILE + TILE / 2, y: MAP_Y + y * TILE + TILE / 2 });
 const imageReady = (img) => img && img.complete && img.naturalWidth > 0;
 
-// THE MISSING IMAGE FUNCTIONS HAVE BEEN RESTORED
 function drawCoverImage(img, x, y, w, h) {
   if (!imageReady(img)) return false;
   const iw = img.naturalWidth, ih = img.naturalHeight;
@@ -182,6 +180,31 @@ function movePlayer(dx, dy) {
   playerMotion.targetY = ny;
   state.player.stepPulse = 10;
   addDust(nx, ny);
+}
+
+function handleCanvasTap(event) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+
+  const mx = (event.clientX - rect.left) * scaleX;
+  const my = (event.clientY - rect.top) * scaleY;
+
+  const tx = Math.floor((mx - MAP_X) / TILE);
+  const ty = Math.floor((my - MAP_Y) / TILE);
+
+  if (!inBounds(tx, ty)) return;
+
+  const dx = tx - state.player.x;
+  const dy = ty - state.player.y;
+
+  if (Math.abs(dx) > Math.abs(dy)) {
+    movePlayer(Math.sign(dx), 0);
+  } else if (dy !== 0) {
+    movePlayer(0, Math.sign(dy));
+  } else if (dx !== 0) {
+    movePlayer(Math.sign(dx), 0);
+  }
 }
 
 function plantSeed() {
@@ -473,7 +496,6 @@ async function init() {
   enableRoundRectFallback();
   state = loadGame() || defaultState();
   
-  // Only setup default world if the save is completely empty
   if (!state.tiles || state.tiles.length === 0) {
       setupWorld();
   }
@@ -495,11 +517,12 @@ function updateUI() {
 function bindEvents() {
     document.getElementById("startBtn").onclick = () => { haptic(30); ui.titleScreen.classList.add("hidden"); };
     document.getElementById("continueBtn").onclick = () => { haptic(30); ui.titleScreen.classList.add("hidden"); };
+    
+    document.getElementById("howBtn").onclick = () => { haptic(10); ui.helpModal.classList.remove("hidden"); };
+    document.getElementById("closeHelpBtn").onclick = () => { haptic(10); ui.helpModal.classList.add("hidden"); };
+    document.getElementById("helpBackBtn").onclick = () => { haptic(10); ui.helpModal.classList.add("hidden"); };
 
-    document.getElementById("upBtn").onclick = () => movePlayer(0, -1);
-    document.getElementById("downBtn").onclick = () => movePlayer(0, 1);
-    document.getElementById("leftBtn").onclick = () => movePlayer(-1, 0);
-    document.getElementById("rightBtn").onclick = () => movePlayer(1, 0);
+    // D-Pad listeners successfully completely removed from here.
 
     document.getElementById("plantBtn").onclick = plantSeed;
     document.getElementById("waterBtn").onclick = waterCrop;
@@ -519,6 +542,8 @@ function bindEvents() {
     });
 
     document.getElementById("saveBtn").onclick = () => { haptic(20); saveGame(false); };
+    
+    canvas.addEventListener("click", handleCanvasTap);
     
     document.addEventListener("keydown", e => {
         const k = e.key.toLowerCase();
