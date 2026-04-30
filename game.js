@@ -5,7 +5,7 @@ const TILE = 48;
 const COLS = 14;
 const ROWS = 9;
 const MAP_X = 36;
-const MAP_Y = 56;
+const MAP_Y = 86;
 
 const COLORS = {
   grass1: "#3e8f4f",
