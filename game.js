@@ -1,92 +1,77 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-const TILE = 60;
-const COLS = 14;
-const ROWS = 9;
-const MAP_X = 60;
-const MAP_Y = 72;
+const TILE = 84;
+const COLS = 10;
+const ROWS = 8;
+const MAP_WIDTH = COLS * TILE;
+const MAP_HEIGHT = ROWS * TILE;
+const MAP_X = Math.round((canvas.width - MAP_WIDTH) / 2);
+const MAP_Y = 420;
 
-const COLORS = {
-  grass1: "#3e8f4f",
-  grass2: "#347943",
-  soil: "#8b5a2b",
-  soilDark: "#65411f",
-  water: "#4ab7d8",
-  path: "#b48b55",
-  fence: "#7b4f28",
-  gold: "#f3c76a",
-  cream: "#fff4dc",
-  shadow: "rgba(0,0,0,.25)",
-  whiteGlow: "rgba(255,244,220,.75)"
-};
+const STORAGE_KEY = "gardenOfGraceCinematicBuildV1";
 
 const seedInfo = {
   faith: {
     name: "Faith",
-    color: "#f3c76a",
-    full: "Mustard Bloom",
     stat: "faith",
-    message: "A seed of faith has been planted. Small beginnings still matter."
+    cropName: "Mustard Bloom",
+    color: "#e9c35f",
+    glow: "rgba(233,195,95,0.42)",
+    message: "You planted a seed of faith. Small beginnings still matter."
   },
   peace: {
     name: "Peace",
-    color: "#77c9f2",
-    full: "Stillwater Lily",
     stat: "peace",
-    message: "Peace has been planted. Let the quiet places grow."
+    cropName: "Stillwater Lily",
+    color: "#79c7ef",
+    glow: "rgba(121,199,239,0.42)",
+    message: "You planted peace. Let quiet places grow."
   },
   kindness: {
     name: "Kindness",
-    color: "#78c779",
-    full: "Kindness Vine",
     stat: "kindness",
-    message: "Kindness has been planted. Love becomes visible through action."
+    cropName: "Mercy Vine",
+    color: "#86d685",
+    glow: "rgba(134,214,133,0.42)",
+    message: "You planted kindness. Grace becomes visible through action."
   }
 };
 
 let selectedSeed = "faith";
 let messageTimer = 0;
+let timeTick = 0;
 
-let state = {
-  player: { x: 2, y: 4, facing: "down" },
-  day: 1,
-  faith: 1,
-  peace: 1,
-  kindness: 1,
-  harvest: 0,
-  prayedToday: false,
-  tiles: [],
-  crops: {},
-  weeds: {},
-  sparkles: []
+let state = null;
+
+const ui = {
+  questText: document.getElementById("questText"),
+  faithStat: document.getElementById("faithStat"),
+  peaceStat: document.getElementById("peaceStat"),
+  kindnessStat: document.getElementById("kindnessStat"),
+  harvestStat: document.getElementById("harvestStat"),
+  messageBox: document.getElementById("messageBox"),
+  titleScreen: document.getElementById("titleScreen"),
+  helpModal: document.getElementById("helpModal"),
+  continueBtn: document.getElementById("continueBtn")
 };
 
-function setupTiles() {
-  state.tiles = [];
-  for (let y = 0; y < ROWS; y++) {
-    const row = [];
-    for (let x = 0; x < COLS; x++) {
-      let type = "grass";
-
-      if (y === 4 && x >= 0 && x <= 13) type = "path";
-      if (x >= 4 && x <= 9 && y >= 2 && y <= 6) type = "soil";
-      if (x >= 11 && y >= 1 && y <= 3) type = "water";
-      if (x === 0 || y === 0 || x === COLS - 1 || y === ROWS - 1) type = "fence";
-
-      row.push(type);
-    }
-    state.tiles.push(row);
-  }
-
-  const startingWeeds = [
-    [4, 2], [5, 2], [8, 2], [9, 3], [4, 6], [6, 6], [9, 6],
-    [2, 2], [12, 6], [7, 1]
-  ];
-
-  startingWeeds.forEach(([x, y]) => {
-    state.weeds[key(x, y)] = true;
-  });
+function defaultState() {
+  return {
+    player: { x: 1, y: 6, facing: "right" },
+    day: 1,
+    faith: 1,
+    peace: 1,
+    kindness: 1,
+    harvest: 0,
+    prayedToday: false,
+    tiles: [],
+    crops: {},
+    weeds: {},
+    particles: [],
+    sparkles: [],
+    screenFlash: 0
+  };
 }
 
 function key(x, y) {
@@ -97,13 +82,17 @@ function inBounds(x, y) {
   return x >= 0 && y >= 0 && x < COLS && y < ROWS;
 }
 
-function isBlocked(x, y) {
-  if (!inBounds(x, y)) return true;
-  const tile = state.tiles[y][x];
-  return tile === "water" || tile === "fence";
+function tileAt(x, y) {
+  if (!inBounds(x, y)) return "void";
+  return state.tiles[y][x];
 }
 
-function tileCenter(x, y) {
+function isBlocked(x, y) {
+  const t = tileAt(x, y);
+  return t === "water" || t === "fence" || t === "void";
+}
+
+function centerOfTile(x, y) {
   return {
     x: MAP_X + x * TILE + TILE / 2,
     y: MAP_Y + y * TILE + TILE / 2
@@ -111,79 +100,370 @@ function tileCenter(x, y) {
 }
 
 function setMessage(text) {
-  document.getElementById("messageBox").textContent = text;
-  messageTimer = 240;
+  ui.messageBox.textContent = text;
+  messageTimer = 220;
+}
+
+function setupWorld() {
+  state.tiles = [];
+
+  for (let y = 0; y < ROWS; y++) {
+    const row = [];
+    for (let x = 0; x < COLS; x++) {
+      let type = "grass";
+
+      if (x === 0 || y === 0 || x === COLS - 1 || y === ROWS - 1) {
+        type = "fence";
+      } else if (x >= 3 && x <= 6 && y >= 2 && y <= 5) {
+        type = "soil";
+      } else if (x >= 7 && x <= 8 && y >= 1 && y <= 3) {
+        type = "water";
+      } else if (y === 6 && x >= 1 && x <= 8) {
+        type = "path";
+      }
+
+      row.push(type);
+    }
+    state.tiles.push(row);
+  }
+
+  const starterWeeds = [
+    [1, 2], [3, 2], [4, 2], [6, 2], [6, 3], [3, 5], [4, 5], [6, 5], [8, 5], [5, 1]
+  ];
+
+  state.weeds = {};
+  starterWeeds.forEach(([x, y]) => {
+    state.weeds[key(x, y)] = true;
+  });
+
+  state.particles = [];
+  for (let i = 0; i < 26; i++) {
+    state.particles.push({
+      x: Math.random() * canvas.width,
+      y: 240 + Math.random() * (canvas.height - 260),
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: -0.12 - Math.random() * 0.18,
+      r: 1 + Math.random() * 2.2,
+      a: 0.25 + Math.random() * 0.55
+    });
+  }
+
+  state.sparkles = [];
 }
 
 function updateUI() {
-  document.getElementById("faithStat").textContent = state.faith;
-  document.getElementById("peaceStat").textContent = state.peace;
-  document.getElementById("kindnessStat").textContent = state.kindness;
-  document.getElementById("harvestStat").textContent = state.harvest;
+  ui.faithStat.textContent = state.faith;
+  ui.peaceStat.textContent = state.peace;
+  ui.kindnessStat.textContent = state.kindness;
+  ui.harvestStat.textContent = state.harvest;
 
   const weedsLeft = Object.keys(state.weeds).length;
   const cropsReady = Object.values(state.crops).filter(c => c.growth >= 3).length;
+  const planted = Object.keys(state.crops).length;
 
-  let quest = "Restore the Heartfield: plant seeds, water them, clear weeds, and harvest spiritual fruit.";
+  let quest = "Restore the neglected field and prepare it for grace.";
 
-  if (weedsLeft > 4) {
-    quest = `Clear the thorns and worry weeds. ${weedsLeft} patches remain.`;
-  } else if (Object.keys(state.crops).length < 3) {
-    quest = "Plant at least 3 seeds of faith, peace, or kindness in the garden soil.";
+  if (weedsLeft > 0) {
+    quest = `Clear the weeds choking the field. ${weedsLeft} remain.`;
+  } else if (planted < 3) {
+    quest = `Plant 3 seeds in the restored soil. ${3 - planted} more needed.`;
   } else if (cropsReady < 2) {
-    quest = "Water your seeds and help them grow. Harvest 2 mature crops.";
+    quest = "Water your seeds and help them reach maturity.";
   } else if (state.harvest < 5) {
-    quest = `Harvest fruit from the garden. ${5 - state.harvest} more harvest needed to restore the old well.`;
+    quest = `Harvest spiritual fruit from the field. ${5 - state.harvest} more needed.`;
   } else {
-    quest = "The old well is restored. The Prayer Grove will open in the next version.";
+    quest = "The first field is restored. A deeper journey will open next.";
   }
 
-  document.getElementById("questText").textContent = quest;
+  ui.questText.textContent = quest;
+
+  document.querySelectorAll(".seedBtn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.seed === selectedSeed);
+  });
+
+  const hasSave = !!localStorage.getItem(STORAGE_KEY);
+  ui.continueBtn.style.opacity = hasSave ? "1" : "0.45";
 }
 
-function drawRoundedRect(x, y, w, h, r, fill) {
+function addSparkles(tileX, tileY, amount, color = "rgba(255,244,220,0.95)") {
+  const pos = centerOfTile(tileX, tileY);
+
+  for (let i = 0; i < amount; i++) {
+    state.sparkles.push({
+      x: pos.x + (Math.random() - 0.5) * 46,
+      y: pos.y + (Math.random() - 0.5) * 46,
+      vx: (Math.random() - 0.5) * 1.1,
+      vy: -0.4 - Math.random() * 1.1,
+      size: 2 + Math.random() * 3,
+      life: 28 + Math.random() * 28,
+      color
+    });
+  }
+}
+
+function saveGame() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  setMessage("Journey saved. The field will remember your progress.");
+  updateUI();
+}
+
+function loadGameFromStorage() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return false;
+
+  try {
+    const parsed = JSON.parse(raw);
+    state = { ...defaultState(), ...parsed };
+    if (!state.tiles || !state.tiles.length) setupWorld();
+    setMessage("Welcome back. Your field remembered you.");
+    updateUI();
+    return true;
+  } catch (err) {
+    console.warn("Save load failed", err);
+    return false;
+  }
+}
+
+function newGame() {
+  state = defaultState();
+  setupWorld();
+  setMessage("Welcome to the Heartfield. Restore what’s broken and grow in grace.");
+  updateUI();
+}
+
+function movePlayer(dx, dy) {
+  const nx = state.player.x + dx;
+  const ny = state.player.y + dy;
+
+  if (dx > 0) state.player.facing = "right";
+  if (dx < 0) state.player.facing = "left";
+  if (dy > 0) state.player.facing = "down";
+  if (dy < 0) state.player.facing = "up";
+
+  if (isBlocked(nx, ny)) {
+    setMessage("You can’t go that way yet.");
+    return;
+  }
+
+  state.player.x = nx;
+  state.player.y = ny;
+}
+
+function currentKey() {
+  return key(state.player.x, state.player.y);
+}
+
+function plantSeed() {
+  const x = state.player.x;
+  const y = state.player.y;
+  const k = currentKey();
+
+  if (tileAt(x, y) !== "soil") {
+    setMessage("Stand on a soil tile to plant a seed.");
+    return;
+  }
+
+  if (state.weeds[k]) {
+    setMessage("Clear the weeds first. Healthy soil matters.");
+    return;
+  }
+
+  if (state.crops[k]) {
+    setMessage("Something is already growing here.");
+    return;
+  }
+
+  state.crops[k] = {
+    type: selectedSeed,
+    growth: 0,
+    watered: false
+  };
+
+  addSparkles(x, y, 12, seedInfo[selectedSeed].glow);
+  setMessage(seedInfo[selectedSeed].message);
+  updateUI();
+}
+
+function waterCrop() {
+  const k = currentKey();
+  const crop = state.crops[k];
+
+  if (!crop) {
+    setMessage("There’s nothing here to water yet.");
+    return;
+  }
+
+  if (crop.watered) {
+    setMessage("This crop has already been watered today.");
+    return;
+  }
+
+  crop.watered = true;
+  crop.growth = Math.min(3, crop.growth + 1);
+
+  addSparkles(state.player.x, state.player.y, 8, "rgba(121,199,239,0.85)");
+  setMessage("You watered the crop. Growth often comes one faithful step at a time.");
+  updateUI();
+}
+
+function harvestCrop() {
+  const k = currentKey();
+  const crop = state.crops[k];
+
+  if (!crop) {
+    setMessage("There’s nothing here ready for harvest.");
+    return;
+  }
+
+  if (crop.growth < 3) {
+    setMessage("This crop is still growing. Be patient.");
+    return;
+  }
+
+  const info = seedInfo[crop.type];
+  state[info.stat] += 1;
+  state.harvest += 1;
+  delete state.crops[k];
+
+  addSparkles(state.player.x, state.player.y, 18, info.glow);
+  state.screenFlash = 8;
+  setMessage(`You harvested ${info.cropName}. Your ${info.name} increased.`);
+  updateUI();
+}
+
+function clearWeeds() {
+  const k = currentKey();
+
+  if (!state.weeds[k]) {
+    setMessage("There are no weeds here.");
+    return;
+  }
+
+  delete state.weeds[k];
+  state.kindness += 1;
+
+  addSparkles(state.player.x, state.player.y, 14, "rgba(134,214,133,0.86)");
+  state.screenFlash = 4;
+  setMessage("You cleared the weeds. The field feels lighter.");
+  updateUI();
+}
+
+function pray() {
+  if (state.prayedToday) {
+    setMessage("You’ve already prayed today. Keep tending the field.");
+    return;
+  }
+
+  state.prayedToday = true;
+  state.peace += 1;
+
+  Object.values(state.crops).forEach(crop => {
+    if (crop.watered && crop.growth < 3) crop.growth += 1;
+  });
+
+  addSparkles(state.player.x, state.player.y, 28, "rgba(255,244,220,0.96)");
+  state.screenFlash = 12;
+  setMessage("You paused to pray. Peace settles over the field.");
+  updateUI();
+}
+
+function newDay() {
+  state.day += 1;
+  state.prayedToday = false;
+
+  Object.values(state.crops).forEach(crop => {
+    if (crop.watered && crop.growth < 3) crop.growth += 1;
+    crop.watered = false;
+  });
+
+  if (Math.random() < 0.65) {
+    const possible = [];
+
+    for (let y = 1; y < ROWS - 1; y++) {
+      for (let x = 1; x < COLS - 1; x++) {
+        const k = key(x, y);
+        const t = tileAt(x, y);
+        if (t !== "water" && t !== "fence" && !state.weeds[k] && !state.crops[k]) {
+          possible.push([x, y]);
+        }
+      }
+    }
+
+    if (possible.length) {
+      const [wx, wy] = possible[Math.floor(Math.random() * possible.length)];
+      state.weeds[key(wx, wy)] = true;
+    }
+  }
+
+  setMessage(`Day ${state.day} begins. Mercy is new and the field is waiting.`);
+  updateUI();
+}
+
+function drawRoundedRect(x, y, w, h, r, fillStyle) {
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, r);
-  ctx.fillStyle = fill;
+  ctx.fillStyle = fillStyle;
   ctx.fill();
 }
 
 function drawBackground() {
-  const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  gradient.addColorStop(0, "#9ed6ff");
-  gradient.addColorStop(0.42, "#f8d99a");
-  gradient.addColorStop(1, "#365f3b");
-  ctx.fillStyle = gradient;
+  const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  sky.addColorStop(0, "#a8cff2");
+  sky.addColorStop(0.23, "#d7e8f7");
+  sky.addColorStop(0.42, "#efe6c8");
+  sky.addColorStop(0.72, "#7a9262");
+  sky.addColorStop(1, "#42583b");
+  ctx.fillStyle = sky;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.fillStyle = "rgba(255,244,220,.5)";
-  ctx.beginPath();
-  ctx.arc(820, 80, 44, 0, Math.PI * 2);
-  ctx.fill();
+  const sunGlow = ctx.createRadialGradient(860, 210, 30, 860, 210, 220);
+  sunGlow.addColorStop(0, "rgba(255,236,182,0.75)");
+  sunGlow.addColorStop(0.35, "rgba(255,220,140,0.25)");
+  sunGlow.addColorStop(1, "rgba(255,220,140,0)");
+  ctx.fillStyle = sunGlow;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.fillStyle = "rgba(255,255,255,.22)";
-  for (let i = 0; i < 6; i++) {
-    const x = 80 + i * 145;
-    const y = 65 + Math.sin(Date.now() / 1500 + i) * 6;
+  ctx.fillStyle = "rgba(255,255,255,0.16)";
+  for (let i = 0; i < 5; i++) {
+    const cx = 130 + i * 175 + Math.sin(timeTick / 120 + i) * 8;
+    const cy = 170 + (i % 2) * 18;
     ctx.beginPath();
-    ctx.ellipse(x, y, 40, 13, 0, 0, Math.PI * 2);
-    ctx.ellipse(x + 35, y + 5, 34, 11, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy, 58, 22, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx + 46, cy + 8, 54, 18, 0, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  ctx.fillStyle = "rgba(20,50,31,.8)";
+  ctx.fillStyle = "#44593f";
   ctx.beginPath();
-  ctx.moveTo(0, 210);
-  ctx.lineTo(140, 140);
-  ctx.lineTo(280, 215);
-  ctx.lineTo(420, 130);
-  ctx.lineTo(610, 225);
-  ctx.lineTo(760, 145);
-  ctx.lineTo(960, 210);
-  ctx.lineTo(960, 540);
-  ctx.lineTo(0, 540);
+  ctx.moveTo(0, 420);
+  ctx.lineTo(200, 270);
+  ctx.lineTo(440, 390);
+  ctx.lineTo(646, 260);
+  ctx.lineTo(860, 384);
+  ctx.lineTo(1080, 290);
+  ctx.lineTo(1080, 760);
+  ctx.lineTo(0, 760);
   ctx.closePath();
   ctx.fill();
+
+  ctx.fillStyle = "#304330";
+  ctx.beginPath();
+  ctx.moveTo(0, 520);
+  ctx.lineTo(160, 410);
+  ctx.lineTo(355, 520);
+  ctx.lineTo(580, 400);
+  ctx.lineTo(820, 540);
+  ctx.lineTo(1080, 438);
+  ctx.lineTo(1080, 860);
+  ctx.lineTo(0, 860);
+  ctx.closePath();
+  ctx.fill();
+
+  const meadow = ctx.createLinearGradient(0, 1050, 0, 1500);
+  meadow.addColorStop(0, "#8ba06d");
+  meadow.addColorStop(1, "#4e6b48");
+  ctx.fillStyle = meadow;
+  ctx.fillRect(0, 960, canvas.width, canvas.height - 960);
 }
 
 function drawTile(x, y, type) {
@@ -191,267 +471,305 @@ function drawTile(x, y, type) {
   const py = MAP_Y + y * TILE;
 
   if (type === "grass") {
-    ctx.fillStyle = (x + y) % 2 === 0 ? COLORS.grass1 : COLORS.grass2;
+    ctx.fillStyle = (x + y) % 2 === 0 ? "#4d8c4f" : "#428049";
     ctx.fillRect(px, py, TILE, TILE);
 
-    ctx.strokeStyle = "rgba(255,255,255,.035)";
-    ctx.strokeRect(px, py, TILE, TILE);
-
-    if ((x * 7 + y * 3) % 5 === 0) {
-      ctx.fillStyle = "rgba(255,244,220,.18)";
-      ctx.fillRect(px + 11, py + 14, 3, 10);
-      ctx.fillRect(px + 28, py + 27, 3, 8);
+    ctx.fillStyle = "rgba(255,255,255,0.05)";
+    if ((x + y) % 3 === 0) {
+      ctx.fillRect(px + 16, py + 18, 3, 18);
+      ctx.fillRect(px + 43, py + 36, 3, 14);
+      ctx.fillRect(px + 60, py + 24, 2, 16);
     }
   }
 
   if (type === "soil") {
-    ctx.fillStyle = COLORS.soil;
+    ctx.fillStyle = "#9c6a34";
     ctx.fillRect(px, py, TILE, TILE);
-    ctx.fillStyle = "rgba(0,0,0,.12)";
-    ctx.fillRect(px, py + TILE - 8, TILE, 8);
-    ctx.strokeStyle = "rgba(255,244,220,.09)";
-    ctx.strokeRect(px, py, TILE, TILE);
 
-    ctx.strokeStyle = "rgba(70,40,18,.42)";
-    for (let i = 0; i < 3; i++) {
-      ctx.beginPath();
-      ctx.moveTo(px + 7, py + 12 + i * 12);
-      ctx.lineTo(px + TILE - 8, py + 10 + i * 12);
-      ctx.stroke();
+    ctx.fillStyle = "rgba(80,40,16,0.28)";
+    for (let i = 0; i < 4; i++) {
+      ctx.fillRect(px + 12, py + 14 + i * 16, TILE - 24, 2);
     }
-  }
 
-  if (type === "path") {
-    ctx.fillStyle = COLORS.path;
-    ctx.fillRect(px, py, TILE, TILE);
-    ctx.fillStyle = "rgba(255,244,220,.12)";
-    ctx.fillRect(px + 7, py + 11, 11, 6);
-    ctx.fillRect(px + 28, py + 28, 13, 7);
+    ctx.fillStyle = "rgba(0,0,0,0.08)";
+    ctx.fillRect(px, py + TILE - 8, TILE, 8);
   }
 
   if (type === "water") {
-    ctx.fillStyle = COLORS.water;
+    ctx.fillStyle = "#59b0dc";
     ctx.fillRect(px, py, TILE, TILE);
-    ctx.strokeStyle = "rgba(255,255,255,.28)";
+
+    ctx.strokeStyle = "rgba(255,255,255,0.18)";
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(px + 6, py + 18);
-    ctx.quadraticCurveTo(px + 18, py + 10, px + 30, py + 18);
-    ctx.quadraticCurveTo(px + 39, py + 25, px + 46, py + 19);
+    ctx.moveTo(px + 10, py + 24);
+    ctx.quadraticCurveTo(px + 24, py + 16, px + 38, py + 24);
+    ctx.quadraticCurveTo(px + 52, py + 32, px + 68, py + 22);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(px + 14, py + 52);
+    ctx.quadraticCurveTo(px + 30, py + 42, px + 46, py + 52);
+    ctx.quadraticCurveTo(px + 58, py + 59, px + 72, py + 50);
     ctx.stroke();
   }
 
-  if (type === "fence") {
-    ctx.fillStyle = "#315b38";
+  if (type === "path") {
+    ctx.fillStyle = "#c6a36a";
     ctx.fillRect(px, py, TILE, TILE);
-    ctx.fillStyle = COLORS.fence;
-    ctx.fillRect(px + 8, py + 12, 8, 30);
-    ctx.fillRect(px + 31, py + 12, 8, 30);
-    ctx.fillRect(px + 4, py + 20, 40, 7);
-    ctx.fillRect(px + 4, py + 33, 40, 7);
+
+    ctx.fillStyle = "rgba(255,244,220,0.12)";
+    ctx.fillRect(px + 10, py + 18, 10, 8);
+    ctx.fillRect(px + 34, py + 42, 12, 8);
+    ctx.fillRect(px + 56, py + 22, 9, 9);
   }
+
+  if (type === "fence") {
+    ctx.fillStyle = "#30573b";
+    ctx.fillRect(px, py, TILE, TILE);
+
+    ctx.fillStyle = "#8a5b31";
+    ctx.fillRect(px + 16, py + 8, 10, TILE - 16);
+    ctx.fillRect(px + 58, py + 8, 10, TILE - 16);
+    ctx.fillRect(px + 8, py + 24, TILE - 16, 9);
+    ctx.fillRect(px + 8, py + 50, TILE - 16, 9);
+  }
+
+  ctx.strokeStyle = "rgba(0,0,0,0.08)";
+  ctx.strokeRect(px, py, TILE, TILE);
+}
+
+function drawMapShadow() {
+  ctx.fillStyle = "rgba(0,0,0,0.18)";
+  ctx.fillRect(MAP_X + 10, MAP_Y + 14, MAP_WIDTH, MAP_HEIGHT);
+}
+
+function drawWeed(x, y) {
+  const pos = centerOfTile(x, y);
+
+  ctx.save();
+  ctx.translate(pos.x, pos.y);
+
+  ctx.fillStyle = "rgba(0,0,0,0.16)";
+  ctx.beginPath();
+  ctx.ellipse(0, 22, 18, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = "#263919";
+  ctx.lineWidth = 5;
+  for (let i = -2; i <= 2; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * 5, 18);
+    ctx.quadraticCurveTo(i * 8, 0, i * 11, -16);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = "#5c7431";
+  ctx.beginPath();
+  ctx.ellipse(-10, -7, 9, 4, -0.6, 0, Math.PI * 2);
+  ctx.ellipse(10, -10, 9, 4, 0.6, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
 }
 
 function drawCrop(x, y, crop) {
-  const px = MAP_X + x * TILE;
-  const py = MAP_Y + y * TILE;
+  const pos = centerOfTile(x, y);
   const info = seedInfo[crop.type];
 
   ctx.save();
-  ctx.translate(px + TILE / 2, py + TILE / 2);
+  ctx.translate(pos.x, pos.y);
 
-  ctx.fillStyle = "rgba(0,0,0,.18)";
+  ctx.fillStyle = "rgba(0,0,0,0.16)";
   ctx.beginPath();
-  ctx.ellipse(0, 14, 16, 6, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 22, 18, 7, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.strokeStyle = "#2d6b35";
-  ctx.lineWidth = 4;
+  ctx.strokeStyle = "#2e7a38";
+  ctx.lineWidth = 5;
 
   if (crop.growth === 0) {
     ctx.fillStyle = info.color;
     ctx.beginPath();
-    ctx.arc(0, 8, 5, 0, Math.PI * 2);
+    ctx.arc(0, 14, 7, 0, Math.PI * 2);
     ctx.fill();
   }
 
   if (crop.growth === 1) {
     ctx.beginPath();
-    ctx.moveTo(0, 12);
+    ctx.moveTo(0, 18);
     ctx.lineTo(0, -2);
     ctx.stroke();
 
-    ctx.fillStyle = "#78c779";
+    ctx.fillStyle = "#74c97a";
     ctx.beginPath();
-    ctx.ellipse(-7, 2, 8, 4, -0.6, 0, Math.PI * 2);
-    ctx.ellipse(7, 0, 8, 4, 0.6, 0, Math.PI * 2);
+    ctx.ellipse(-10, 4, 10, 4, -0.7, 0, Math.PI * 2);
+    ctx.ellipse(10, 1, 10, 4, 0.7, 0, Math.PI * 2);
     ctx.fill();
   }
 
   if (crop.growth === 2) {
     ctx.beginPath();
-    ctx.moveTo(0, 14);
+    ctx.moveTo(0, 18);
     ctx.lineTo(0, -12);
     ctx.stroke();
 
-    ctx.fillStyle = "#78c779";
+    ctx.fillStyle = "#74c97a";
     ctx.beginPath();
-    ctx.ellipse(-9, -2, 10, 5, -0.6, 0, Math.PI * 2);
-    ctx.ellipse(9, -5, 10, 5, 0.6, 0, Math.PI * 2);
+    ctx.ellipse(-12, 0, 12, 5, -0.7, 0, Math.PI * 2);
+    ctx.ellipse(12, -3, 12, 5, 0.7, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = info.color;
     ctx.beginPath();
-    ctx.arc(0, -13, 7, 0, Math.PI * 2);
+    ctx.arc(0, -15, 10, 0, Math.PI * 2);
     ctx.fill();
   }
 
   if (crop.growth >= 3) {
-    const pulse = Math.sin(Date.now() / 220) * 2;
+    const pulse = Math.sin(timeTick / 10) * 2;
+
+    ctx.shadowColor = info.glow;
+    ctx.shadowBlur = 18;
 
     ctx.beginPath();
-    ctx.moveTo(0, 16);
-    ctx.lineTo(0, -15);
+    ctx.moveTo(0, 18);
+    ctx.lineTo(0, -16);
     ctx.stroke();
 
-    ctx.fillStyle = "#78c779";
+    ctx.fillStyle = "#74c97a";
     ctx.beginPath();
-    ctx.ellipse(-11, -4, 12, 6, -0.7, 0, Math.PI * 2);
-    ctx.ellipse(11, -7, 12, 6, 0.7, 0, Math.PI * 2);
+    ctx.ellipse(-12, -2, 12, 5, -0.7, 0, Math.PI * 2);
+    ctx.ellipse(12, -5, 12, 5, 0.7, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = info.color;
     for (let i = 0; i < 6; i++) {
       const angle = (Math.PI * 2 / 6) * i;
+      const px = Math.cos(angle) * 10;
+      const py = -20 + Math.sin(angle) * 10;
       ctx.beginPath();
-      ctx.ellipse(Math.cos(angle) * 8, -18 + Math.sin(angle) * 8, 7 + pulse, 4 + pulse * 0.3, angle, 0, Math.PI * 2);
+      ctx.ellipse(px, py, 8 + pulse * 0.2, 5 + pulse * 0.15, angle, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    ctx.fillStyle = COLORS.cream;
+    ctx.fillStyle = "#fff8e5";
     ctx.beginPath();
-    ctx.arc(0, -18, 5, 0, Math.PI * 2);
+    ctx.arc(0, -20, 6, 0, Math.PI * 2);
     ctx.fill();
   }
 
   if (crop.watered) {
-    ctx.fillStyle = "rgba(119,201,242,.6)";
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "rgba(121,199,239,0.8)";
     ctx.beginPath();
-    ctx.arc(15, 12, 3, 0, Math.PI * 2);
-    ctx.arc(21, 6, 2, 0, Math.PI * 2);
+    ctx.arc(17, 10, 4, 0, Math.PI * 2);
+    ctx.arc(24, 2, 3, 0, Math.PI * 2);
     ctx.fill();
   }
-
-  ctx.restore();
-}
-
-function drawWeed(x, y) {
-  const px = MAP_X + x * TILE;
-  const py = MAP_Y + y * TILE;
-
-  ctx.save();
-  ctx.translate(px + TILE / 2, py + TILE / 2);
-
-  ctx.strokeStyle = "#263518";
-  ctx.lineWidth = 4;
-  for (let i = -2; i <= 2; i++) {
-    ctx.beginPath();
-    ctx.moveTo(i * 4, 14);
-    ctx.quadraticCurveTo(i * 7, -3, i * 10, -12);
-    ctx.stroke();
-  }
-
-  ctx.fillStyle = "#5b6e26";
-  ctx.beginPath();
-  ctx.ellipse(-9, -5, 8, 4, -0.6, 0, Math.PI * 2);
-  ctx.ellipse(7, -8, 8, 4, 0.6, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "rgba(0,0,0,.16)";
-  ctx.beginPath();
-  ctx.ellipse(0, 16, 17, 5, 0, 0, Math.PI * 2);
-  ctx.fill();
 
   ctx.restore();
 }
 
 function drawPlayer() {
-  const { x, y } = state.player;
-  const pos = tileCenter(x, y);
+  const pos = centerOfTile(state.player.x, state.player.y);
+  const bob = Math.sin(timeTick / 10) * 2;
 
   ctx.save();
-  ctx.translate(pos.x, pos.y);
+  ctx.translate(pos.x, pos.y + bob);
 
-  ctx.fillStyle = "rgba(0,0,0,.25)";
+  ctx.fillStyle = "rgba(0,0,0,0.22)";
   ctx.beginPath();
-  ctx.ellipse(0, 17, 16, 7, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 28, 20, 8, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#315f80";
+  ctx.fillStyle = "#2f5b7d";
   ctx.beginPath();
-  ctx.roundRect(-13, -6, 26, 27, 8);
+  ctx.roundRect(-16, -2, 32, 38, 10);
   ctx.fill();
 
-  ctx.fillStyle = "#f2c99d";
+  ctx.fillStyle = "#f2c79e";
   ctx.beginPath();
-  ctx.arc(0, -17, 13, 0, Math.PI * 2);
+  ctx.arc(0, -18, 16, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#5a3321";
+  ctx.fillStyle = "#5b3524";
   ctx.beginPath();
-  ctx.arc(0, -23, 13, Math.PI, Math.PI * 2);
+  ctx.arc(0, -24, 16, Math.PI, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#1b2430";
+  ctx.fillStyle = "#1c2530";
   ctx.beginPath();
-  ctx.arc(-5, -17, 2, 0, Math.PI * 2);
-  ctx.arc(5, -17, 2, 0, Math.PI * 2);
+  ctx.arc(-6, -18, 2.3, 0, Math.PI * 2);
+  ctx.arc(6, -18, 2.3, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.strokeStyle = "#1b2430";
+  ctx.strokeStyle = "#1c2530";
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(0, -12, 5, 0, Math.PI);
+  ctx.arc(0, -12, 6, 0, Math.PI);
   ctx.stroke();
 
-  ctx.fillStyle = "#f3c76a";
+  ctx.fillStyle = "#e5bf72";
   ctx.beginPath();
-  ctx.moveTo(0, -2);
-  ctx.lineTo(5, 8);
-  ctx.lineTo(0, 18);
-  ctx.lineTo(-5, 8);
+  ctx.moveTo(0, 6);
+  ctx.lineTo(7, 18);
+  ctx.lineTo(0, 30);
+  ctx.lineTo(-7, 18);
   ctx.closePath();
   ctx.fill();
 
   ctx.restore();
 }
 
-function drawHUD() {
-  drawRoundedRect(24, 16, 430, 35, 15, "rgba(16,24,32,.72)");
-  ctx.fillStyle = COLORS.cream;
-  ctx.font = "800 18px Arial";
-  ctx.fillText("Garden of Grace: First Harvest", 44, 39);
+function drawParticles() {
+  state.particles.forEach(p => {
+    ctx.fillStyle = `rgba(255,232,162,${p.a})`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fill();
+  });
 
-  ctx.fillStyle = COLORS.gold;
-  ctx.font = "700 13px Arial";
-  ctx.fillText(`Day ${state.day} • Seed: ${seedInfo[selectedSeed].name}`, 298, 39);
-
-  drawRoundedRect(672, 18, 250, 34, 15, "rgba(16,24,32,.72)");
-  ctx.fillStyle = "#fff";
-  ctx.font = "700 13px Arial";
-  ctx.fillText("Goal: restore the old well", 696, 40);
-}
-
-function drawSparkles() {
   state.sparkles.forEach(s => {
-    ctx.fillStyle = `rgba(255,244,220,${s.life / 60})`;
+    ctx.fillStyle = s.color;
+    ctx.globalAlpha = Math.max(0, s.life / 45);
     ctx.beginPath();
     ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
     ctx.fill();
+    ctx.globalAlpha = 1;
   });
 }
 
-function draw() {
+function drawVignette() {
+  const vignette = ctx.createRadialGradient(
+    canvas.width / 2,
+    canvas.height / 2,
+    300,
+    canvas.width / 2,
+    canvas.height / 2,
+    950
+  );
+  vignette.addColorStop(0, "rgba(0,0,0,0)");
+  vignette.addColorStop(1, "rgba(0,0,0,0.28)");
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  if (state.screenFlash > 0) {
+    ctx.fillStyle = `rgba(255,244,220,${state.screenFlash * 0.02})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+}
+
+function drawDayBadge() {
+  drawRoundedRect(26, 340, 150, 42, 18, "rgba(8,14,22,0.64)");
+  ctx.fillStyle = "#fff4dc";
+  ctx.font = "800 20px Montserrat";
+  ctx.fillText(`Day ${state.day}`, 50, 367);
+}
+
+function drawScene() {
   drawBackground();
+  drawMapShadow();
 
   for (let y = 0; y < ROWS; y++) {
     for (let x = 0; x < COLS; x++) {
@@ -470,264 +788,43 @@ function draw() {
   });
 
   drawPlayer();
-  drawSparkles();
-
-  drawHUD();
-
-  if (messageTimer > 0) {
-    messageTimer--;
-  }
+  drawParticles();
+  drawDayBadge();
+  drawVignette();
 }
 
-function movePlayer(dx, dy) {
-  const nx = state.player.x + dx;
-  const ny = state.player.y + dy;
+function updateParticles() {
+  state.particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
 
-  if (dx > 0) state.player.facing = "right";
-  if (dx < 0) state.player.facing = "left";
-  if (dy > 0) state.player.facing = "down";
-  if (dy < 0) state.player.facing = "up";
-
-  if (isBlocked(nx, ny)) {
-    setMessage("That path is blocked. Some places open as your garden is restored.");
-    return;
-  }
-
-  state.player.x = nx;
-  state.player.y = ny;
-}
-
-function currentKey() {
-  return key(state.player.x, state.player.y);
-}
-
-function plantSeed() {
-  const { x, y } = state.player;
-  const k = currentKey();
-
-  if (state.tiles[y][x] !== "soil") {
-    setMessage("Seeds grow best in the garden soil. Stand on a brown garden tile.");
-    return;
-  }
-
-  if (state.weeds[k]) {
-    setMessage("Clear the weeds first. Faith grows better where the ground is tended.");
-    return;
-  }
-
-  if (state.crops[k]) {
-    setMessage("Something is already growing here.");
-    return;
-  }
-
-  state.crops[k] = {
-    type: selectedSeed,
-    growth: 0,
-    watered: false
-  };
-
-  addSparkles(x, y, 10);
-  setMessage(seedInfo[selectedSeed].message);
-  updateUI();
-}
-
-function waterCrop() {
-  const k = currentKey();
-  const crop = state.crops[k];
-
-  if (!crop) {
-    setMessage("There is nothing here to water yet.");
-    return;
-  }
-
-  if (crop.watered) {
-    setMessage("This seed has already been watered. Give it a moment to grow.");
-    return;
-  }
-
-  crop.watered = true;
-  crop.growth = Math.min(3, crop.growth + 1);
-
-  addSparkles(state.player.x, state.player.y, 8);
-  setMessage("You watered the seed with care. Growth often comes one faithful step at a time.");
-  updateUI();
-}
-
-function harvestCrop() {
-  const k = currentKey();
-  const crop = state.crops[k];
-
-  if (!crop) {
-    setMessage("There is nothing ready to harvest here.");
-    return;
-  }
-
-  if (crop.growth < 3) {
-    setMessage("This crop is still growing. Patience is part of the harvest.");
-    return;
-  }
-
-  const info = seedInfo[crop.type];
-  state[info.stat] += 1;
-  state.harvest += 1;
-
-  delete state.crops[k];
-
-  addSparkles(state.player.x, state.player.y, 18);
-  setMessage(`You harvested ${info.full}. Your ${info.name} has grown stronger.`);
-  updateUI();
-}
-
-function clearWeeds() {
-  const k = currentKey();
-
-  if (!state.weeds[k]) {
-    setMessage("No weeds here. Look for the dark thorny patches.");
-    return;
-  }
-
-  delete state.weeds[k];
-  state.kindness += 1;
-
-  addSparkles(state.player.x, state.player.y, 12);
-  setMessage("You cleared worry from the soil. The garden feels lighter.");
-  updateUI();
-}
-
-function pray() {
-  if (state.prayedToday) {
-    setMessage("You already paused in prayer today. Keep tending the garden.");
-    return;
-  }
-
-  state.prayedToday = true;
-  state.peace += 1;
-
-  const { x, y } = state.player;
-  addSparkles(x, y, 28);
-
-  Object.values(state.crops).forEach(crop => {
-    if (crop.watered && crop.growth < 3) {
-      crop.growth += 1;
+    if (p.y < 200) {
+      p.y = canvas.height - 120;
+      p.x = Math.random() * canvas.width;
     }
+
+    if (p.x < 0) p.x = canvas.width;
+    if (p.x > canvas.width) p.x = 0;
   });
 
-  setMessage("You paused to pray. Peace settles over the garden, and watered seeds grow stronger.");
-  updateUI();
-}
-
-function addSparkles(tileX, tileY, count) {
-  const pos = tileCenter(tileX, tileY);
-
-  for (let i = 0; i < count; i++) {
-    state.sparkles.push({
-      x: pos.x + (Math.random() - 0.5) * 42,
-      y: pos.y + (Math.random() - 0.5) * 42,
-      vx: (Math.random() - 0.5) * 0.7,
-      vy: -Math.random() * 0.8,
-      size: 2 + Math.random() * 3,
-      life: 40 + Math.random() * 25
-    });
-  }
-}
-
-function updateSparkles() {
   state.sparkles = state.sparkles.filter(s => {
     s.x += s.vx;
     s.y += s.vy;
     s.life -= 1;
     return s.life > 0;
   });
-}
 
-function newDay() {
-  state.day += 1;
-  state.prayedToday = false;
-
-  Object.values(state.crops).forEach(crop => {
-    if (crop.watered && crop.growth < 3) {
-      crop.growth += 1;
-    }
-    crop.watered = false;
-  });
-
-  if (Math.random() < 0.5) {
-    const soilTiles = [];
-    for (let y = 1; y < ROWS - 1; y++) {
-      for (let x = 1; x < COLS - 1; x++) {
-        const k = key(x, y);
-        if (state.tiles[y][x] !== "water" && state.tiles[y][x] !== "fence" && !state.crops[k] && !state.weeds[k]) {
-          soilTiles.push([x, y]);
-        }
-      }
-    }
-
-    if (soilTiles.length) {
-      const [wx, wy] = soilTiles[Math.floor(Math.random() * soilTiles.length)];
-      state.weeds[key(wx, wy)] = true;
-    }
-  }
-
-  setMessage("A new day begins. Mercy is new, and the garden is waiting.");
-  updateUI();
-}
-
-function saveGame() {
-  localStorage.setItem("gardenOfGraceSave", JSON.stringify(state));
-  setMessage("Game saved. Your garden will be here when you return.");
-}
-
-function loadGame() {
-  const saved = localStorage.getItem("gardenOfGraceSave");
-
-  if (saved) {
-    try {
-      state = JSON.parse(saved);
-      setMessage("Welcome back. Your garden remembered you.");
-      updateUI();
-      return;
-    } catch (e) {
-      console.warn("Save failed to load.", e);
-    }
-  }
-
-  setupTiles();
-  setMessage("Welcome to the Heartfield. Plant seeds, clear weeds, and grow in grace.");
-  updateUI();
-}
-
-function resetIfMissingTiles() {
-  if (!state.tiles || !state.tiles.length) {
-    setupTiles();
-  }
+  if (state.screenFlash > 0) state.screenFlash -= 1;
 }
 
 function gameLoop() {
-  resetIfMissingTiles();
-  updateSparkles();
-  draw();
+  timeTick += 1;
+  updateParticles();
+  drawScene();
   requestAnimationFrame(gameLoop);
 }
 
-document.addEventListener("keydown", e => {
-  const key = e.key.toLowerCase();
-
-  if (key === "arrowup" || key === "w") movePlayer(0, -1);
-  if (key === "arrowdown" || key === "s") movePlayer(0, 1);
-  if (key === "arrowleft" || key === "a") movePlayer(-1, 0);
-  if (key === "arrowright" || key === "d") movePlayer(1, 0);
-
-  if (key === "p") plantSeed();
-  if (key === "e") waterCrop();
-  if (key === "h") harvestCrop();
-  if (key === "c") clearWeeds();
-  if (key === " ") pray();
-  if (key === "n") newDay();
-
-  updateUI();
-});
-
-canvas.addEventListener("click", e => {
+function handleCanvasTap(e) {
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;
   const scaleY = canvas.height / rect.height;
@@ -740,55 +837,96 @@ canvas.addEventListener("click", e => {
 
   if (!inBounds(tx, ty)) return;
 
-  const dx = Math.sign(tx - state.player.x);
-  const dy = Math.sign(ty - state.player.y);
+  const dx = tx - state.player.x;
+  const dy = ty - state.player.y;
 
-  if (Math.abs(tx - state.player.x) > Math.abs(ty - state.player.y)) {
-    movePlayer(dx, 0);
-  } else if (ty !== state.player.y) {
-    movePlayer(0, dy);
-  } else if (tx !== state.player.x) {
-    movePlayer(dx, 0);
+  if (Math.abs(dx) > Math.abs(dy)) {
+    movePlayer(Math.sign(dx), 0);
+  } else if (dy !== 0) {
+    movePlayer(0, Math.sign(dy));
+  } else if (dx !== 0) {
+    movePlayer(Math.sign(dx), 0);
   }
+}
 
-  updateUI();
-});
+function bindEvents() {
+  document.getElementById("saveBtn").addEventListener("click", saveGame);
 
-document.querySelectorAll(".seedBtn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".seedBtn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    selectedSeed = btn.dataset.seed;
-    setMessage(`${seedInfo[selectedSeed].name} seed selected.`);
-  });
-});
+  document.getElementById("plantBtn").addEventListener("click", plantSeed);
+  document.getElementById("waterBtn").addEventListener("click", waterCrop);
+  document.getElementById("harvestBtn").addEventListener("click", harvestCrop);
+  document.getElementById("clearBtn").addEventListener("click", clearWeeds);
+  document.getElementById("prayBtn").addEventListener("click", pray);
 
-document.getElementById("plantBtn").addEventListener("click", plantSeed);
-document.getElementById("waterBtn").addEventListener("click", waterCrop);
-document.getElementById("harvestBtn").addEventListener("click", harvestCrop);
-document.getElementById("clearBtn").addEventListener("click", clearWeeds);
-document.getElementById("prayBtn").addEventListener("click", pray);
-document.getElementById("saveBtn").addEventListener("click", saveGame);
+  document.getElementById("upBtn").addEventListener("click", () => movePlayer(0, -1));
+  document.getElementById("downBtn").addEventListener("click", () => movePlayer(0, 1));
+  document.getElementById("leftBtn").addEventListener("click", () => movePlayer(-1, 0));
+  document.getElementById("rightBtn").addEventListener("click", () => movePlayer(1, 0));
 
-document.getElementById("upBtn").addEventListener("click", () => movePlayer(0, -1));
-document.getElementById("downBtn").addEventListener("click", () => movePlayer(0, 1));
-document.getElementById("leftBtn").addEventListener("click", () => movePlayer(-1, 0));
-document.getElementById("rightBtn").addEventListener("click", () => movePlayer(1, 0));
-
-setInterval(() => {
-  if (Object.keys(state.crops).length > 0) {
-    Object.values(state.crops).forEach(crop => {
-      if (crop.watered && crop.growth < 3 && Math.random() < 0.25) {
-        crop.growth += 1;
-      }
+  document.querySelectorAll(".seedBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      selectedSeed = btn.dataset.seed;
+      setMessage(`${seedInfo[selectedSeed].name} seed selected.`);
+      updateUI();
     });
-    updateUI();
-  }
-}, 8000);
+  });
 
-setInterval(() => {
-  newDay();
-}, 90000);
+  document.getElementById("startBtn").addEventListener("click", () => {
+    newGame();
+    ui.titleScreen.classList.add("hidden");
+  });
+
+  document.getElementById("continueBtn").addEventListener("click", () => {
+    if (!loadGameFromStorage()) {
+      newGame();
+      setMessage("No saved journey found, so a new one has begun.");
+    }
+    ui.titleScreen.classList.add("hidden");
+  });
+
+  document.getElementById("howBtn").addEventListener("click", () => {
+    ui.helpModal.classList.remove("hidden");
+  });
+
+  document.getElementById("closeHelpBtn").addEventListener("click", () => {
+    ui.helpModal.classList.add("hidden");
+  });
+
+  canvas.addEventListener("click", handleCanvasTap);
+
+  document.addEventListener("keydown", e => {
+    const k = e.key.toLowerCase();
+
+    if (k === "arrowup" || k === "w") movePlayer(0, -1);
+    if (k === "arrowdown" || k === "s") movePlayer(0, 1);
+    if (k === "arrowleft" || k === "a") movePlayer(-1, 0);
+    if (k === "arrowright" || k === "d") movePlayer(1, 0);
+
+    if (k === "1") {
+      selectedSeed = "faith";
+      updateUI();
+    }
+    if (k === "2") {
+      selectedSeed = "peace";
+      updateUI();
+    }
+    if (k === "3") {
+      selectedSeed = "kindness";
+      updateUI();
+    }
+
+    if (k === "p") plantSeed();
+    if (k === "e") waterCrop();
+    if (k === "h") harvestCrop();
+    if (k === "c") clearWeeds();
+    if (k === " ") pray();
+    if (k === "n") newDay();
+  });
+
+  setInterval(() => {
+    newDay();
+  }, 90000);
+}
 
 if (!CanvasRenderingContext2D.prototype.roundRect) {
   CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
@@ -804,16 +942,12 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     return this;
   };
 }
- const mobilePlantBtn = document.getElementById("mobilePlantBtn");
-const mobileWaterBtn = document.getElementById("mobileWaterBtn");
-const mobileHarvestBtn = document.getElementById("mobileHarvestBtn");
-const mobileClearBtn = document.getElementById("mobileClearBtn");
-const mobilePrayBtn = document.getElementById("mobilePrayBtn");
 
-if (mobilePlantBtn) mobilePlantBtn.addEventListener("click", plantSeed);
-if (mobileWaterBtn) mobileWaterBtn.addEventListener("click", waterCrop);
-if (mobileHarvestBtn) mobileHarvestBtn.addEventListener("click", harvestCrop);
-if (mobileClearBtn) mobileClearBtn.addEventListener("click", clearWeeds);
-if (mobilePrayBtn) mobilePrayBtn.addEventListener("click", pray);
-loadGame();
-gameLoop();
+function init() {
+  newGame();
+  bindEvents();
+  updateUI();
+  gameLoop();
+}
+
+init();
