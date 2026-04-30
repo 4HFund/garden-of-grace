@@ -1,1 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Garden of Grace: First Harvest</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="gameShell">
+    <header class="topBar">
+      <div>
+        <h1>Garden of Grace</h1>
+        <p>First Harvest</p>
+      </div>
+      <button id="saveBtn">Save</button>
+    </header>
 
+    <main class="gameWrap">
+      <canvas id="gameCanvas" width="960" height="540"></canvas>
+
+      <section class="sidePanel">
+        <h2>Today’s Journey</h2>
+        <p id="questText">Loading quest...</p>
+
+        <div class="statsBox">
+          <div><span>Faith</span><strong id="faithStat">1</strong></div>
+          <div><span>Peace</span><strong id="peaceStat">1</strong></div>
+          <div><span>Kindness</span><strong id="kindnessStat">1</strong></div>
+          <div><span>Harvest</span><strong id="harvestStat">0</strong></div>
+        </div>
+
+        <h3>Seeds</h3>
+        <div class="seedButtons">
+          <button class="seedBtn active" data-seed="faith">Faith</button>
+          <button class="seedBtn" data-seed="peace">Peace</button>
+          <button class="seedBtn" data-seed="kindness">Kindness</button>
+        </div>
+
+        <h3>Actions</h3>
+        <div class="actionButtons">
+          <button id="plantBtn">Plant</button>
+          <button id="waterBtn">Water</button>
+          <button id="harvestBtn">Harvest</button>
+          <button id="clearBtn">Clear Weeds</button>
+          <button id="prayBtn">Pray</button>
+        </div>
+
+        <p class="hint">
+          Move with arrow keys/WASD. Tap a tile to walk there. Use actions when standing on a garden tile.
+        </p>
+      </section>
+    </main>
+
+    <section class="mobileControls">
+      <button id="upBtn">▲</button>
+      <div>
+        <button id="leftBtn">◀</button>
+        <button id="downBtn">▼</button>
+        <button id="rightBtn">▶</button>
+      </div>
+    </section>
+
+    <div id="messageBox">Welcome to the Garden of Grace.</div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
