@@ -9,7 +9,15 @@ const MAP_HEIGHT = ROWS * TILE;
 const MAP_X = Math.round((canvas.width - MAP_WIDTH) / 2);
 const MAP_Y = 560;
 
-const STORAGE_KEY = "gardenOfGraceAssetBuildV1";
+const STORAGE_KEY = "gardenOfGracePremiumV2";
+
+const ASSET_PATHS = {
+  grass: "assets/grass.png",
+  soil: "assets/soil.png",
+  weed: "assets/weed.png",
+  faithCrop: "assets/faith-crop.png",
+  player: "assets/player.png"
+};
 
 const seedInfo = {
   faith: {
@@ -38,21 +46,76 @@ const seedInfo = {
   }
 };
 
-const ASSET_PATHS = {
-  grass: "assets/grass.png",
-  soil: "assets/soil.png",
-  weed: "assets/weed.png",
-  faithCrop: "assets/faith-crop.png",
-  player: "assets/player.png"
+const ui = {
+  loadingScreen: document.getElementById("loadingScreen"),
+  loadingFill: document.getElementById("loadingFill"),
+  loadingText: document.getElementById("loadingText"),
+  titleScreen: document.getElementById("titleScreen"),
+  helpModal: document.getElementById("helpModal"),
+  continueBtn: document.getElementById("continueBtn"),
+  questText: document.getElementById("questText"),
+  faithStat: document.getElementById("faithStat"),
+  peaceStat: document.getElementById("peaceStat"),
+  kindnessStat: document.getElementById("kindnessStat"),
+  harvestStat: document.getElementById("harvestStat"),
+  messageBox: document.getElementById("messageBox")
 };
 
-const gameImages = {};
+const images = {};
+let selectedSeed = "faith";
+let timeTick = 0;
+let lastAutoSave = 0;
+let state = null;
 
-Object.entries(ASSET_PATHS).forEach(([name, src]) => {
-  const img = new Image();
-  img.src = src;
-  gameImages[name] = img;
-});
+function defaultState() {
+  return {
+    player: {
+      x: 1,
+      y: 6,
+      facing: "right",
+      stepPulse: 0
+    },
+    day: 1,
+    faith: 1,
+    peace: 1,
+    kindness: 1,
+    harvest: 0,
+    prayedToday: false,
+    tiles: [],
+    crops: {},
+    weeds: {},
+    particles: [],
+    sparkles: [],
+    ripples: [],
+    screenFlash: 0,
+    message: "Welcome to the Heartfield. Restore what’s broken and grow in grace."
+  };
+}
+
+function key(x, y) {
+  return `${x},${y}`;
+}
+
+function inBounds(x, y) {
+  return x >= 0 && x < COLS && y >= 0 && y < ROWS;
+}
+
+function tileAt(x, y) {
+  if (!inBounds(x, y)) return "void";
+  return state.tiles[y][x];
+}
+
+function isBlocked(x, y) {
+  const type = tileAt(x, y);
+  return type === "void" || type === "water" || type === "fence";
+}
+
+function centerOfTile(x, y) {
+  return {
+    x: MAP_X + x * TILE + TILE / 2,
+    y: MAP_Y + y * TILE + TILE / 2
+  };
+}
 
 function imageReady(img) {
   return img && img.complete && img.naturalWidth > 0;
@@ -88,69 +151,43 @@ function drawContainImage(img, x, y, w, h) {
   return true;
 }
 
-let selectedSeed = "faith";
-let messageTimer = 0;
-let timeTick = 0;
-let state = null;
+function loadAssets() {
+  const entries = Object.entries(ASSET_PATHS);
+  let loaded = 0;
 
-const ui = {
-  questText: document.getElementById("questText"),
-  faithStat: document.getElementById("faithStat"),
-  peaceStat: document.getElementById("peaceStat"),
-  kindnessStat: document.getElementById("kindnessStat"),
-  harvestStat: document.getElementById("harvestStat"),
-  messageBox: document.getElementById("messageBox"),
-  titleScreen: document.getElementById("titleScreen"),
-  helpModal: document.getElementById("helpModal"),
-  continueBtn: document.getElementById("continueBtn")
-};
+  return new Promise(resolve => {
+    entries.forEach(([name, src]) => {
+      const img = new Image();
 
-function defaultState() {
-  return {
-    player: { x: 1, y: 6, facing: "right" },
-    day: 1,
-    faith: 1,
-    peace: 1,
-    kindness: 1,
-    harvest: 0,
-    prayedToday: false,
-    tiles: [],
-    crops: {},
-    weeds: {},
-    particles: [],
-    sparkles: [],
-    screenFlash: 0
-  };
+      img.onload = () => {
+        loaded += 1;
+        images[name] = img;
+        updateLoading(loaded, entries.length);
+
+        if (loaded === entries.length) {
+          setTimeout(resolve, 350);
+        }
+      };
+
+      img.onerror = () => {
+        loaded += 1;
+        images[name] = img;
+        updateLoading(loaded, entries.length);
+
+        if (loaded === entries.length) {
+          setTimeout(resolve, 350);
+        }
+      };
+
+      img.src = `${src}?cache=${Date.now()}`;
+    });
+  });
 }
 
-function key(x, y) {
-  return `${x},${y}`;
-}
-
-function inBounds(x, y) {
-  return x >= 0 && y >= 0 && x < COLS && y < ROWS;
-}
-
-function tileAt(x, y) {
-  if (!inBounds(x, y)) return "void";
-  return state.tiles[y][x];
-}
-
-function isBlocked(x, y) {
-  const t = tileAt(x, y);
-  return t === "water" || t === "fence" || t === "void";
-}
-
-function centerOfTile(x, y) {
-  return {
-    x: MAP_X + x * TILE + TILE / 2,
-    y: MAP_Y + y * TILE + TILE / 2
-  };
-}
-
-function setMessage(text) {
-  ui.messageBox.textContent = text;
-  messageTimer = 220;
+function updateLoading(loaded, total) {
+  const percent = Math.round((loaded / total) * 100);
+  ui.loadingFill.style.width = `${percent}%`;
+  ui.loadingText.textContent = `Loading assets... ${percent}%`;
 }
 
 function setupWorld() {
@@ -164,11 +201,17 @@ function setupWorld() {
 
       if (x === 0 || y === 0 || x === COLS - 1 || y === ROWS - 1) {
         type = "fence";
-      } else if (x >= 3 && x <= 6 && y >= 2 && y <= 5) {
+      }
+
+      if (x >= 3 && x <= 6 && y >= 2 && y <= 5) {
         type = "soil";
-      } else if (x >= 7 && x <= 8 && y >= 1 && y <= 3) {
+      }
+
+      if (x >= 7 && x <= 8 && y >= 1 && y <= 3) {
         type = "water";
-      } else if (y === 6 && x >= 1 && x <= 8) {
+      }
+
+      if (y === 6 && x >= 1 && x <= 8) {
         type = "path";
       }
 
@@ -178,7 +221,9 @@ function setupWorld() {
     state.tiles.push(row);
   }
 
-  const starterWeeds = [
+  state.weeds = {};
+
+  [
     [1, 2],
     [3, 2],
     [4, 2],
@@ -189,85 +234,52 @@ function setupWorld() {
     [6, 5],
     [8, 5],
     [5, 1]
-  ];
-
-  state.weeds = {};
-  starterWeeds.forEach(([x, y]) => {
+  ].forEach(([x, y]) => {
     state.weeds[key(x, y)] = true;
   });
 
   state.particles = [];
-  for (let i = 0; i < 26; i++) {
+  state.sparkles = [];
+  state.ripples = [];
+
+  for (let i = 0; i < 44; i++) {
     state.particles.push({
       x: Math.random() * canvas.width,
-      y: 240 + Math.random() * (canvas.height - 260),
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: -0.12 - Math.random() * 0.18,
-      r: 1 + Math.random() * 2.2,
-      a: 0.25 + Math.random() * 0.55
+      y: 200 + Math.random() * (canvas.height - 240),
+      vx: -0.12 + Math.random() * 0.24,
+      vy: -0.08 - Math.random() * 0.18,
+      r: 0.8 + Math.random() * 2.4,
+      a: 0.15 + Math.random() * 0.42
     });
   }
 
-  state.sparkles = [];
-}
-
-function updateUI() {
-  ui.faithStat.textContent = state.faith;
-  ui.peaceStat.textContent = state.peace;
-  ui.kindnessStat.textContent = state.kindness;
-  ui.harvestStat.textContent = state.harvest;
-
-  const weedsLeft = Object.keys(state.weeds).length;
-  const cropsReady = Object.values(state.crops).filter(c => c.growth >= 3).length;
-  const planted = Object.keys(state.crops).length;
-
-  let quest = "Restore the neglected field and prepare it for grace.";
-
-  if (weedsLeft > 0) {
-    quest = `Clear the weeds choking the field. ${weedsLeft} remain.`;
-  } else if (planted < 3) {
-    quest = `Plant 3 seeds in the restored soil. ${3 - planted} more needed.`;
-  } else if (cropsReady < 2) {
-    quest = "Water your seeds and help them reach maturity.";
-  } else if (state.harvest < 5) {
-    quest = `Harvest spiritual fruit from the field. ${5 - state.harvest} more needed.`;
-  } else {
-    quest = "The first field is restored. A deeper journey will open next.";
-  }
-
-  ui.questText.textContent = quest;
-
-  document.querySelectorAll(".seedBtn").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.seed === selectedSeed);
-  });
-
-  const hasSave = !!localStorage.getItem(STORAGE_KEY);
-  ui.continueBtn.style.opacity = hasSave ? "1" : "0.45";
-}
-
-function addSparkles(tileX, tileY, amount, color = "rgba(255,244,220,0.95)") {
-  const pos = centerOfTile(tileX, tileY);
-
-  for (let i = 0; i < amount; i++) {
-    state.sparkles.push({
-      x: pos.x + (Math.random() - 0.5) * 46,
-      y: pos.y + (Math.random() - 0.5) * 46,
-      vx: (Math.random() - 0.5) * 1.1,
-      vy: -0.4 - Math.random() * 1.1,
-      size: 2 + Math.random() * 3,
-      life: 28 + Math.random() * 28,
-      color
+  for (let i = 0; i < 12; i++) {
+    state.ripples.push({
+      x: MAP_X + 7 * TILE + Math.random() * TILE * 2,
+      y: MAP_Y + TILE + Math.random() * TILE * 3,
+      t: Math.random() * 100
     });
   }
 }
 
-function saveGame() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  setMessage("Journey saved. The field will remember your progress.");
+function newGame() {
+  state = defaultState();
+  setupWorld();
+  setMessage("Welcome to the Heartfield. Restore what’s broken and grow in grace.");
   updateUI();
 }
 
-function loadGameFromStorage() {
+function saveGame(silent = false) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+  if (!silent) {
+    setMessage("Journey saved. The field will remember your progress.");
+  }
+
+  updateUI();
+}
+
+function loadGame() {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return false;
 
@@ -279,20 +291,56 @@ function loadGameFromStorage() {
       setupWorld();
     }
 
+    if (!state.particles || !state.particles.length) {
+      setupWorld();
+    }
+
     setMessage("Welcome back. Your field remembered you.");
     updateUI();
     return true;
-  } catch (err) {
-    console.warn("Save load failed", err);
+  } catch (error) {
+    console.warn("Could not load save", error);
     return false;
   }
 }
 
-function newGame() {
-  state = defaultState();
-  setupWorld();
-  setMessage("Welcome to the Heartfield. Restore what’s broken and grow in grace.");
-  updateUI();
+function setMessage(text) {
+  state.message = text;
+  ui.messageBox.textContent = text;
+}
+
+function updateUI() {
+  ui.faithStat.textContent = state.faith;
+  ui.peaceStat.textContent = state.peace;
+  ui.kindnessStat.textContent = state.kindness;
+  ui.harvestStat.textContent = state.harvest;
+
+  const weedsLeft = Object.keys(state.weeds).length;
+  const planted = Object.keys(state.crops).length;
+  const ready = Object.values(state.crops).filter(crop => crop.growth >= 3).length;
+
+  let quest = "Restore the neglected field and prepare it for grace.";
+
+  if (weedsLeft > 0) {
+    quest = `Clear the weeds choking the field. ${weedsLeft} remain.`;
+  } else if (planted < 3) {
+    quest = `Plant 3 seeds in restored soil. ${3 - planted} more needed.`;
+  } else if (ready < 2) {
+    quest = "Water your seeds and help them reach maturity.";
+  } else if (state.harvest < 5) {
+    quest = `Harvest spiritual fruit. ${5 - state.harvest} more needed.`;
+  } else {
+    quest = "The first field is restored. A deeper journey will open next.";
+  }
+
+  ui.questText.textContent = quest;
+
+  document.querySelectorAll(".seed-option").forEach(button => {
+    button.classList.toggle("active", button.dataset.seed === selectedSeed);
+  });
+
+  const hasSave = !!localStorage.getItem(STORAGE_KEY);
+  ui.continueBtn.style.opacity = hasSave ? "1" : "0.45";
 }
 
 function movePlayer(dx, dy) {
@@ -305,55 +353,66 @@ function movePlayer(dx, dy) {
   if (dy < 0) state.player.facing = "up";
 
   if (isBlocked(nx, ny)) {
-    setMessage("You can’t go that way yet.");
+    setMessage("That path is blocked for now.");
+    bumpEffect(state.player.x, state.player.y);
     return;
   }
 
   state.player.x = nx;
   state.player.y = ny;
+  state.player.stepPulse = 10;
+
+  addDust(nx, ny);
 }
 
-function currentKey() {
+function currentTileKey() {
   return key(state.player.x, state.player.y);
 }
 
 function plantSeed() {
   const x = state.player.x;
   const y = state.player.y;
-  const k = currentKey();
+  const k = currentTileKey();
 
   if (tileAt(x, y) !== "soil") {
     setMessage("Stand on a soil tile to plant a seed.");
+    bumpEffect(x, y);
     return;
   }
 
   if (state.weeds[k]) {
     setMessage("Clear the weeds first. Healthy soil matters.");
+    bumpEffect(x, y);
     return;
   }
 
   if (state.crops[k]) {
     setMessage("Something is already growing here.");
+    bumpEffect(x, y);
     return;
   }
 
   state.crops[k] = {
     type: selectedSeed,
     growth: 0,
-    watered: false
+    watered: false,
+    plantedAt: state.day
   };
 
-  addSparkles(x, y, 12, seedInfo[selectedSeed].glow);
-  setMessage(seedInfo[selectedSeed].message);
+  const info = seedInfo[selectedSeed];
+  addSparkles(x, y, 18, info.glow);
+  pulseFlash(5);
+  setMessage(info.message);
   updateUI();
 }
 
 function waterCrop() {
-  const k = currentKey();
+  const k = currentTileKey();
   const crop = state.crops[k];
 
   if (!crop) {
-    setMessage("There’s nothing here to water yet.");
+    setMessage("There is nothing here to water yet.");
+    bumpEffect(state.player.x, state.player.y);
     return;
   }
 
@@ -365,56 +424,62 @@ function waterCrop() {
   crop.watered = true;
   crop.growth = Math.min(3, crop.growth + 1);
 
-  addSparkles(state.player.x, state.player.y, 8, "rgba(121,199,239,0.85)");
-  setMessage("You watered the crop. Growth often comes one faithful step at a time.");
+  addSparkles(state.player.x, state.player.y, 14, "rgba(121,199,239,0.86)");
+  addWaterBurst(state.player.x, state.player.y);
+
+  setMessage("You watered the crop. Faithful care brings growth.");
   updateUI();
 }
 
 function harvestCrop() {
-  const k = currentKey();
+  const k = currentTileKey();
   const crop = state.crops[k];
 
   if (!crop) {
-    setMessage("There’s nothing here ready for harvest.");
+    setMessage("There is nothing here ready for harvest.");
+    bumpEffect(state.player.x, state.player.y);
     return;
   }
 
   if (crop.growth < 3) {
-    setMessage("This crop is still growing. Be patient.");
+    setMessage("This crop is still growing. Patience is part of the harvest.");
+    bumpEffect(state.player.x, state.player.y);
     return;
   }
 
   const info = seedInfo[crop.type];
+
   state[info.stat] += 1;
   state.harvest += 1;
   delete state.crops[k];
 
-  addSparkles(state.player.x, state.player.y, 18, info.glow);
-  state.screenFlash = 8;
-  setMessage(`You harvested ${info.cropName}. Your ${info.name} increased.`);
+  addSparkles(state.player.x, state.player.y, 28, info.glow);
+  pulseFlash(10);
+  setMessage(`You harvested ${info.cropName}. ${info.name} increased.`);
   updateUI();
 }
 
 function clearWeeds() {
-  const k = currentKey();
+  const k = currentTileKey();
 
   if (!state.weeds[k]) {
     setMessage("There are no weeds here.");
+    bumpEffect(state.player.x, state.player.y);
     return;
   }
 
   delete state.weeds[k];
   state.kindness += 1;
 
-  addSparkles(state.player.x, state.player.y, 14, "rgba(134,214,133,0.86)");
-  state.screenFlash = 4;
+  addSparkles(state.player.x, state.player.y, 24, "rgba(134,214,133,0.86)");
+  pulseFlash(7);
   setMessage("You cleared the weeds. The field feels lighter.");
   updateUI();
 }
 
 function pray() {
   if (state.prayedToday) {
-    setMessage("You’ve already prayed today. Keep tending the field.");
+    setMessage("You already prayed today. Keep tending the field.");
     return;
   }
 
@@ -427,8 +492,8 @@ function pray() {
     }
   });
 
-  addSparkles(state.player.x, state.player.y, 28, "rgba(255,244,220,0.96)");
-  state.screenFlash = 12;
+  addSparkles(state.player.x, state.player.y, 46, "rgba(255,244,220,0.96)");
+  pulseFlash(14);
   setMessage("You paused to pray. Peace settles over the field.");
   updateUI();
 }
@@ -441,98 +506,176 @@ function newDay() {
     if (crop.watered && crop.growth < 3) {
       crop.growth += 1;
     }
+
     crop.watered = false;
   });
 
-  if (Math.random() < 0.65) {
-    const possible = [];
+  maybeSpawnWeed();
 
-    for (let y = 1; y < ROWS - 1; y++) {
-      for (let x = 1; x < COLS - 1; x++) {
-        const k = key(x, y);
-        const t = tileAt(x, y);
-
-        if (t !== "water" && t !== "fence" && !state.weeds[k] && !state.crops[k]) {
-          possible.push([x, y]);
-        }
-      }
-    }
-
-    if (possible.length) {
-      const [wx, wy] = possible[Math.floor(Math.random() * possible.length)];
-      state.weeds[key(wx, wy)] = true;
-    }
-  }
-
-  setMessage(`Day ${state.day} begins. Mercy is new and the field is waiting.`);
+  setMessage(`Day ${state.day} begins. Mercy is new, and the field is waiting.`);
   updateUI();
 }
 
-function drawRoundedRect(x, y, w, h, r, fillStyle) {
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, r);
-  ctx.fillStyle = fillStyle;
-  ctx.fill();
+function maybeSpawnWeed() {
+  if (Math.random() > 0.62) return;
+
+  const possible = [];
+
+  for (let y = 1; y < ROWS - 1; y++) {
+    for (let x = 1; x < COLS - 1; x++) {
+      const k = key(x, y);
+      const type = tileAt(x, y);
+
+      if (type !== "water" && type !== "fence" && !state.weeds[k] && !state.crops[k]) {
+        possible.push([x, y]);
+      }
+    }
+  }
+
+  if (!possible.length) return;
+
+  const [x, y] = possible[Math.floor(Math.random() * possible.length)];
+  state.weeds[key(x, y)] = true;
+}
+
+function addSparkles(tileX, tileY, amount, color) {
+  const center = centerOfTile(tileX, tileY);
+
+  for (let i = 0; i < amount; i++) {
+    state.sparkles.push({
+      x: center.x + (Math.random() - 0.5) * 54,
+      y: center.y + (Math.random() - 0.5) * 54,
+      vx: (Math.random() - 0.5) * 1.35,
+      vy: -0.4 - Math.random() * 1.2,
+      size: 2 + Math.random() * 3.6,
+      life: 28 + Math.random() * 34,
+      maxLife: 62,
+      color
+    });
+  }
+}
+
+function addDust(tileX, tileY) {
+  const center = centerOfTile(tileX, tileY);
+
+  for (let i = 0; i < 6; i++) {
+    state.sparkles.push({
+      x: center.x + (Math.random() - 0.5) * 34,
+      y: center.y + 30 + Math.random() * 10,
+      vx: (Math.random() - 0.5) * 0.8,
+      vy: -0.2 - Math.random() * 0.5,
+      size: 2 + Math.random() * 2,
+      life: 18 + Math.random() * 16,
+      maxLife: 34,
+      color: "rgba(238,210,160,0.50)"
+    });
+  }
+}
+
+function addWaterBurst(tileX, tileY) {
+  const center = centerOfTile(tileX, tileY);
+
+  for (let i = 0; i < 10; i++) {
+    state.sparkles.push({
+      x: center.x + 18 + (Math.random() - 0.5) * 20,
+      y: center.y + (Math.random() - 0.5) * 24,
+      vx: (Math.random() - 0.5) * 1.1,
+      vy: -0.2 - Math.random() * 1,
+      size: 2 + Math.random() * 2,
+      life: 22 + Math.random() * 12,
+      maxLife: 34,
+      color: "rgba(121,199,239,0.85)"
+    });
+  }
+}
+
+function bumpEffect(tileX, tileY) {
+  addSparkles(tileX, tileY, 6, "rgba(255,120,100,0.45)");
+}
+
+function pulseFlash(amount) {
+  state.screenFlash = Math.max(state.screenFlash, amount);
 }
 
 function drawBackground() {
   const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  sky.addColorStop(0, "#a8cff2");
-  sky.addColorStop(0.23, "#d7e8f7");
-  sky.addColorStop(0.42, "#efe6c8");
-  sky.addColorStop(0.72, "#7a9262");
-  sky.addColorStop(1, "#42583b");
+  sky.addColorStop(0, "#a9d0ef");
+  sky.addColorStop(0.18, "#daeaf4");
+  sky.addColorStop(0.38, "#e7dfbf");
+  sky.addColorStop(0.68, "#708b5d");
+  sky.addColorStop(1, "#3f5437");
+
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  const sunGlow = ctx.createRadialGradient(860, 210, 30, 860, 210, 220);
-  sunGlow.addColorStop(0, "rgba(255,236,182,0.75)");
-  sunGlow.addColorStop(0.35, "rgba(255,220,140,0.25)");
-  sunGlow.addColorStop(1, "rgba(255,220,140,0)");
-  ctx.fillStyle = sunGlow;
+  const sun = ctx.createRadialGradient(862, 220, 18, 862, 220, 260);
+  sun.addColorStop(0, "rgba(255,244,200,0.8)");
+  sun.addColorStop(0.28, "rgba(255,224,145,0.26)");
+  sun.addColorStop(1, "rgba(255,224,145,0)");
+
+  ctx.fillStyle = sun;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.fillStyle = "rgba(255,255,255,0.16)";
-  for (let i = 0; i < 5; i++) {
-    const cx = 130 + i * 175 + Math.sin(timeTick / 120 + i) * 8;
-    const cy = 170 + (i % 2) * 18;
+  drawClouds();
+  drawMountains();
+  drawMeadow();
+}
+
+function drawClouds() {
+  ctx.fillStyle = "rgba(255,255,255,0.14)";
+
+  for (let i = 0; i < 6; i++) {
+    const x = 80 + i * 185 + Math.sin(timeTick / 170 + i) * 10;
+    const y = 180 + (i % 3) * 28;
+
     ctx.beginPath();
-    ctx.ellipse(cx, cy, 58, 22, 0, 0, Math.PI * 2);
-    ctx.ellipse(cx + 46, cy + 8, 54, 18, 0, 0, Math.PI * 2);
+    ctx.ellipse(x, y, 68, 22, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + 48, y + 8, 58, 18, 0, 0, Math.PI * 2);
+    ctx.ellipse(x - 44, y + 12, 46, 16, 0, 0, Math.PI * 2);
     ctx.fill();
   }
+}
 
-  ctx.fillStyle = "#44593f";
-  ctx.beginPath();
-  ctx.moveTo(0, 420);
-  ctx.lineTo(200, 270);
-  ctx.lineTo(440, 390);
-  ctx.lineTo(646, 260);
-  ctx.lineTo(860, 384);
-  ctx.lineTo(1080, 290);
-  ctx.lineTo(1080, 760);
-  ctx.lineTo(0, 760);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = "#304330";
+function drawMountains() {
+  ctx.fillStyle = "#40583e";
   ctx.beginPath();
   ctx.moveTo(0, 520);
-  ctx.lineTo(160, 410);
-  ctx.lineTo(355, 520);
-  ctx.lineTo(580, 400);
-  ctx.lineTo(820, 540);
-  ctx.lineTo(1080, 438);
-  ctx.lineTo(1080, 860);
-  ctx.lineTo(0, 860);
+  ctx.lineTo(190, 360);
+  ctx.lineTo(385, 500);
+  ctx.lineTo(585, 350);
+  ctx.lineTo(825, 510);
+  ctx.lineTo(1080, 382);
+  ctx.lineTo(1080, 820);
+  ctx.lineTo(0, 820);
   ctx.closePath();
   ctx.fill();
 
-  const meadow = ctx.createLinearGradient(0, 1050, 0, 1500);
-  meadow.addColorStop(0, "#8ba06d");
-  meadow.addColorStop(1, "#4e6b48");
+  ctx.fillStyle = "#2f432f";
+  ctx.beginPath();
+  ctx.moveTo(0, 660);
+  ctx.lineTo(155, 500);
+  ctx.lineTo(350, 650);
+  ctx.lineTo(575, 500);
+  ctx.lineTo(820, 680);
+  ctx.lineTo(1080, 510);
+  ctx.lineTo(1080, 930);
+  ctx.lineTo(0, 930);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawMeadow() {
+  const meadow = ctx.createLinearGradient(0, 920, 0, canvas.height);
+  meadow.addColorStop(0, "#899d68");
+  meadow.addColorStop(1, "#425c3a");
+
   ctx.fillStyle = meadow;
-  ctx.fillRect(0, 960, canvas.width, canvas.height - 960);
+  ctx.fillRect(0, 900, canvas.width, canvas.height - 900);
+}
+
+function drawMapShadow() {
+  ctx.fillStyle = "rgba(0,0,0,0.22)";
+  ctx.fillRect(MAP_X + 12, MAP_Y + 18, MAP_WIDTH, MAP_HEIGHT);
 }
 
 function drawTile(x, y, type) {
@@ -540,22 +683,8 @@ function drawTile(x, y, type) {
   const py = MAP_Y + y * TILE;
 
   if (type === "grass") {
-    const usedImage = drawCoverImage(gameImages.grass, px, py, TILE, TILE);
-
-    if (!usedImage) {
-      ctx.fillStyle = (x + y) % 2 === 0 ? "#4d8c4f" : "#428049";
-      ctx.fillRect(px, py, TILE, TILE);
-    }
-
-    ctx.fillStyle = "rgba(0,0,0,0.10)";
-    ctx.fillRect(px, py + TILE - 10, TILE, 10);
-  }
-
-  if (type === "soil") {
-    const usedImage = drawCoverImage(gameImages.soil, px, py, TILE, TILE);
-
-    if (!usedImage) {
-      ctx.fillStyle = "#9c6a34";
+    if (!drawCoverImage(images.grass, px, py, TILE, TILE)) {
+      ctx.fillStyle = "#438348";
       ctx.fillRect(px, py, TILE, TILE);
     }
 
@@ -563,142 +692,128 @@ function drawTile(x, y, type) {
     ctx.fillRect(px, py + TILE - 10, TILE, 10);
   }
 
+  if (type === "soil") {
+    if (!drawCoverImage(images.soil, px, py, TILE, TILE)) {
+      ctx.fillStyle = "#925d31";
+      ctx.fillRect(px, py, TILE, TILE);
+    }
+
+    ctx.fillStyle = "rgba(0,0,0,0.14)";
+    ctx.fillRect(px, py + TILE - 10, TILE, 10);
+  }
+
   if (type === "water") {
     const gradient = ctx.createLinearGradient(px, py, px, py + TILE);
-    gradient.addColorStop(0, "#6bc8ef");
-    gradient.addColorStop(1, "#328fbd");
+    gradient.addColorStop(0, "#6cc9ee");
+    gradient.addColorStop(1, "#2f8dbb");
+
     ctx.fillStyle = gradient;
     ctx.fillRect(px, py, TILE, TILE);
 
-    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.strokeStyle = "rgba(255,255,255,0.26)";
     ctx.lineWidth = 3;
+
+    const waveOffset = Math.sin(timeTick / 28 + x + y) * 4;
+
     ctx.beginPath();
-    ctx.moveTo(px + 10, py + 24);
-    ctx.quadraticCurveTo(px + 24, py + 12, px + 40, py + 24);
-    ctx.quadraticCurveTo(px + 54, py + 36, px + 72, py + 22);
+    ctx.moveTo(px + 12, py + 28 + waveOffset);
+    ctx.quadraticCurveTo(px + 30, py + 16 + waveOffset, px + 48, py + 28 + waveOffset);
+    ctx.quadraticCurveTo(px + 64, py + 40 + waveOffset, px + 82, py + 24 + waveOffset);
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo(px + 12, py + 56);
-    ctx.quadraticCurveTo(px + 28, py + 44, px + 44, py + 56);
-    ctx.quadraticCurveTo(px + 60, py + 68, px + 74, py + 52);
+    ctx.moveTo(px + 14, py + 62 - waveOffset);
+    ctx.quadraticCurveTo(px + 34, py + 50 - waveOffset, px + 54, py + 62 - waveOffset);
+    ctx.quadraticCurveTo(px + 70, py + 74 - waveOffset, px + 86, py + 58 - waveOffset);
     ctx.stroke();
   }
 
   if (type === "path") {
-    ctx.fillStyle = "#c6a36a";
+    ctx.fillStyle = "#c7a56c";
     ctx.fillRect(px, py, TILE, TILE);
 
     ctx.fillStyle = "rgba(255,244,220,0.12)";
-    ctx.fillRect(px + 10, py + 18, 12, 9);
-    ctx.fillRect(px + 35, py + 42, 14, 9);
-    ctx.fillRect(px + 58, py + 22, 10, 10);
+    ctx.fillRect(px + 12, py + 22, 14, 9);
+    ctx.fillRect(px + 42, py + 54, 16, 10);
+    ctx.fillRect(px + 68, py + 28, 11, 11);
 
-    ctx.fillStyle = "rgba(0,0,0,0.08)";
-    ctx.fillRect(px, py + TILE - 8, TILE, 8);
+    ctx.fillStyle = "rgba(0,0,0,0.10)";
+    ctx.fillRect(px, py + TILE - 9, TILE, 9);
   }
 
   if (type === "fence") {
-    drawCoverImage(gameImages.grass, px, py, TILE, TILE);
+    drawCoverImage(images.grass, px, py, TILE, TILE);
 
-    ctx.fillStyle = "rgba(20,45,28,0.55)";
+    ctx.fillStyle = "rgba(20,45,28,0.50)";
     ctx.fillRect(px, py, TILE, TILE);
 
-    ctx.fillStyle = "#8a5b31";
-    ctx.fillRect(px + 16, py + 8, 11, TILE - 16);
-    ctx.fillRect(px + 57, py + 8, 11, TILE - 16);
-    ctx.fillRect(px + 8, py + 24, TILE - 16, 10);
-    ctx.fillRect(px + 8, py + 50, TILE - 16, 10);
+    ctx.fillStyle = "#8e5e33";
+    ctx.fillRect(px + 18, py + 9, 12, TILE - 18);
+    ctx.fillRect(px + 66, py + 9, 12, TILE - 18);
+    ctx.fillRect(px + 9, py + 28, TILE - 18, 11);
+    ctx.fillRect(px + 9, py + 58, TILE - 18, 11);
 
     ctx.fillStyle = "rgba(255,244,220,0.10)";
-    ctx.fillRect(px + 16, py + 8, 4, TILE - 16);
-    ctx.fillRect(px + 8, py + 24, TILE - 16, 3);
+    ctx.fillRect(px + 18, py + 9, 4, TILE - 18);
+    ctx.fillRect(px + 9, py + 28, TILE - 18, 3);
   }
 
   ctx.strokeStyle = "rgba(0,0,0,0.08)";
   ctx.strokeRect(px, py, TILE, TILE);
 }
 
-function drawMapShadow() {
-  ctx.fillStyle = "rgba(0,0,0,0.18)";
-  ctx.fillRect(MAP_X + 10, MAP_Y + 14, MAP_WIDTH, MAP_HEIGHT);
-}
-
 function drawWeed(x, y) {
-  const pos = centerOfTile(x, y);
+  const center = centerOfTile(x, y);
+  const size = TILE * 0.96;
 
   ctx.save();
 
-  ctx.fillStyle = "rgba(0,0,0,0.28)";
+  ctx.fillStyle = "rgba(0,0,0,0.30)";
   ctx.beginPath();
-  ctx.ellipse(pos.x, pos.y + 28, 26, 10, 0, 0, Math.PI * 2);
+  ctx.ellipse(center.x, center.y + 33, 30, 11, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  const size = TILE * 0.92;
-  const usedImage = drawContainImage(
-    gameImages.weed,
-    pos.x - size / 2,
-    pos.y - size / 2,
+  drawContainImage(
+    images.weed,
+    center.x - size / 2,
+    center.y - size / 2,
     size,
     size
   );
-
-  if (!usedImage) {
-    ctx.translate(pos.x, pos.y);
-
-    ctx.strokeStyle = "#263919";
-    ctx.lineWidth = 5;
-
-    for (let i = -2; i <= 2; i++) {
-      ctx.beginPath();
-      ctx.moveTo(i * 5, 18);
-      ctx.quadraticCurveTo(i * 8, 0, i * 11, -16);
-      ctx.stroke();
-    }
-
-    ctx.fillStyle = "#5c7431";
-    ctx.beginPath();
-    ctx.ellipse(-10, -7, 9, 4, -0.6, 0, Math.PI * 2);
-    ctx.ellipse(10, -10, 9, 4, 0.6, 0, Math.PI * 2);
-    ctx.fill();
-  }
 
   ctx.restore();
 }
 
 function drawCrop(x, y, crop) {
-  const pos = centerOfTile(x, y);
+  const center = centerOfTile(x, y);
   const info = seedInfo[crop.type];
 
   ctx.save();
 
   ctx.fillStyle = "rgba(0,0,0,0.20)";
   ctx.beginPath();
-  ctx.ellipse(pos.x, pos.y + 28, 26, 10, 0, 0, Math.PI * 2);
+  ctx.ellipse(center.x, center.y + 31, 26, 10, 0, 0, Math.PI * 2);
   ctx.fill();
 
   if (crop.growth >= 3 && crop.type === "faith") {
-    ctx.shadowColor = info.glow;
-    ctx.shadowBlur = 24;
+    const size = TILE * 1.04;
 
-    const size = TILE * 1.02;
-    const usedImage = drawContainImage(
-      gameImages.faithCrop,
-      pos.x - size / 2,
-      pos.y - size / 2,
+    ctx.shadowColor = info.glow;
+    ctx.shadowBlur = 28;
+
+    const drawn = drawContainImage(
+      images.faithCrop,
+      center.x - size / 2,
+      center.y - size / 2,
       size,
       size
     );
 
     ctx.shadowBlur = 0;
 
-    if (usedImage) {
+    if (drawn) {
       if (crop.watered) {
-        ctx.fillStyle = "rgba(121,199,239,0.8)";
-        ctx.beginPath();
-        ctx.arc(pos.x + 26, pos.y + 18, 5, 0, Math.PI * 2);
-        ctx.arc(pos.x + 34, pos.y + 8, 4, 0, Math.PI * 2);
-        ctx.fill();
+        drawWaterDrops(center.x, center.y);
       }
 
       ctx.restore();
@@ -706,7 +821,13 @@ function drawCrop(x, y, crop) {
     }
   }
 
-  ctx.translate(pos.x, pos.y);
+  drawFallbackCrop(center.x, center.y, crop, info);
+  ctx.restore();
+}
+
+function drawFallbackCrop(cx, cy, crop, info) {
+  ctx.save();
+  ctx.translate(cx, cy);
 
   ctx.strokeStyle = "#2e7a38";
   ctx.lineWidth = 5;
@@ -714,149 +835,88 @@ function drawCrop(x, y, crop) {
   if (crop.growth === 0) {
     ctx.fillStyle = info.color;
     ctx.beginPath();
-    ctx.arc(0, 14, 7, 0, Math.PI * 2);
+    ctx.arc(0, 15, 7, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  if (crop.growth === 1) {
+  if (crop.growth >= 1) {
     ctx.beginPath();
-    ctx.moveTo(0, 18);
-    ctx.lineTo(0, -2);
+    ctx.moveTo(0, 20);
+    ctx.lineTo(0, crop.growth === 1 ? -2 : -16);
     ctx.stroke();
 
     ctx.fillStyle = "#74c97a";
     ctx.beginPath();
-    ctx.ellipse(-10, 4, 10, 4, -0.7, 0, Math.PI * 2);
-    ctx.ellipse(10, 1, 10, 4, 0.7, 0, Math.PI * 2);
+    ctx.ellipse(-12, 4, 12, 5, -0.7, 0, Math.PI * 2);
+    ctx.ellipse(12, 1, 12, 5, 0.7, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  if (crop.growth === 2) {
-    ctx.beginPath();
-    ctx.moveTo(0, 18);
-    ctx.lineTo(0, -12);
-    ctx.stroke();
-
-    ctx.fillStyle = "#74c97a";
-    ctx.beginPath();
-    ctx.ellipse(-12, 0, 12, 5, -0.7, 0, Math.PI * 2);
-    ctx.ellipse(12, -3, 12, 5, 0.7, 0, Math.PI * 2);
-    ctx.fill();
-
+  if (crop.growth >= 2) {
     ctx.fillStyle = info.color;
     ctx.beginPath();
-    ctx.arc(0, -15, 10, 0, Math.PI * 2);
+    ctx.arc(0, -15, 11, 0, Math.PI * 2);
     ctx.fill();
   }
 
   if (crop.growth >= 3) {
-    const pulse = Math.sin(timeTick / 10) * 2;
-
     ctx.shadowColor = info.glow;
     ctx.shadowBlur = 18;
 
-    ctx.beginPath();
-    ctx.moveTo(0, 18);
-    ctx.lineTo(0, -16);
-    ctx.stroke();
-
-    ctx.fillStyle = "#74c97a";
-    ctx.beginPath();
-    ctx.ellipse(-12, -2, 12, 5, -0.7, 0, Math.PI * 2);
-    ctx.ellipse(12, -5, 12, 5, 0.7, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = info.color;
-
     for (let i = 0; i < 6; i++) {
       const angle = (Math.PI * 2 / 6) * i;
-      const px = Math.cos(angle) * 10;
-      const py = -20 + Math.sin(angle) * 10;
       ctx.beginPath();
-      ctx.ellipse(px, py, 8 + pulse * 0.2, 5 + pulse * 0.15, angle, 0, Math.PI * 2);
+      ctx.ellipse(
+        Math.cos(angle) * 11,
+        -22 + Math.sin(angle) * 11,
+        8,
+        5,
+        angle,
+        0,
+        Math.PI * 2
+      );
       ctx.fill();
     }
 
-    ctx.fillStyle = "#fff8e5";
-    ctx.beginPath();
-    ctx.arc(0, -20, 6, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.shadowBlur = 0;
   }
 
-  ctx.shadowBlur = 0;
-
   if (crop.watered) {
-    ctx.fillStyle = "rgba(121,199,239,0.8)";
-    ctx.beginPath();
-    ctx.arc(17, 10, 4, 0, Math.PI * 2);
-    ctx.arc(24, 2, 3, 0, Math.PI * 2);
-    ctx.fill();
+    drawWaterDrops(0, 0);
   }
 
   ctx.restore();
 }
 
+function drawWaterDrops(cx, cy) {
+  ctx.fillStyle = "rgba(121,199,239,0.84)";
+  ctx.beginPath();
+  ctx.arc(cx + 25, cy + 17, 5, 0, Math.PI * 2);
+  ctx.arc(cx + 34, cy + 5, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 function drawPlayer() {
-  const pos = centerOfTile(state.player.x, state.player.y);
-  const bob = Math.sin(timeTick / 10) * 2;
+  const center = centerOfTile(state.player.x, state.player.y);
+  const bob = Math.sin(timeTick / 10) * 2 + (state.player.stepPulse > 0 ? Math.sin(state.player.stepPulse) * 2 : 0);
 
   ctx.save();
 
-  ctx.fillStyle = "rgba(0,0,0,0.28)";
+  ctx.fillStyle = "rgba(0,0,0,0.32)";
   ctx.beginPath();
-  ctx.ellipse(pos.x, pos.y + 34, 24, 10, 0, 0, Math.PI * 2);
+  ctx.ellipse(center.x, center.y + 38, 28, 11, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  const playerHeight = TILE * 1.28;
+  const playerHeight = TILE * 1.32;
   const playerWidth = TILE * 0.92;
 
-  const usedImage = drawContainImage(
-    gameImages.player,
-    pos.x - playerWidth / 2,
-    pos.y - playerHeight / 2 + bob,
+  drawContainImage(
+    images.player,
+    center.x - playerWidth / 2,
+    center.y - playerHeight / 2 + bob,
     playerWidth,
     playerHeight
   );
-
-  if (!usedImage) {
-    ctx.translate(pos.x, pos.y + bob);
-
-    ctx.fillStyle = "#2f5b7d";
-    ctx.beginPath();
-    ctx.roundRect(-16, -2, 32, 38, 10);
-    ctx.fill();
-
-    ctx.fillStyle = "#f2c79e";
-    ctx.beginPath();
-    ctx.arc(0, -18, 16, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = "#5b3524";
-    ctx.beginPath();
-    ctx.arc(0, -24, 16, Math.PI, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = "#1c2530";
-    ctx.beginPath();
-    ctx.arc(-6, -18, 2.3, 0, Math.PI * 2);
-    ctx.arc(6, -18, 2.3, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = "#1c2530";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(0, -12, 6, 0, Math.PI);
-    ctx.stroke();
-
-    ctx.fillStyle = "#e5bf72";
-    ctx.beginPath();
-    ctx.moveTo(0, 6);
-    ctx.lineTo(7, 18);
-    ctx.lineTo(0, 30);
-    ctx.lineTo(-7, 18);
-    ctx.closePath();
-    ctx.fill();
-  }
 
   ctx.restore();
 }
@@ -870,8 +930,9 @@ function drawParticles() {
   });
 
   state.sparkles.forEach(s => {
+    const alpha = Math.max(0, s.life / s.maxLife);
+    ctx.globalAlpha = alpha;
     ctx.fillStyle = s.color;
-    ctx.globalAlpha = Math.max(0, s.life / 45);
     ctx.beginPath();
     ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
     ctx.fill();
@@ -879,33 +940,39 @@ function drawParticles() {
   });
 }
 
+function drawDayBadge() {
+  ctx.save();
+  ctx.fillStyle = "rgba(8,14,22,0.64)";
+  ctx.beginPath();
+  ctx.roundRect(26, 456, 142, 42, 18);
+  ctx.fill();
+
+  ctx.fillStyle = "#fff4dc";
+  ctx.font = "800 19px Montserrat";
+  ctx.fillText(`Day ${state.day}`, 50, 484);
+  ctx.restore();
+}
+
 function drawVignette() {
   const vignette = ctx.createRadialGradient(
     canvas.width / 2,
     canvas.height / 2,
-    300,
+    280,
     canvas.width / 2,
     canvas.height / 2,
-    950
+    980
   );
 
   vignette.addColorStop(0, "rgba(0,0,0,0)");
-  vignette.addColorStop(1, "rgba(0,0,0,0.28)");
+  vignette.addColorStop(1, "rgba(0,0,0,0.34)");
 
   ctx.fillStyle = vignette;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   if (state.screenFlash > 0) {
-    ctx.fillStyle = `rgba(255,244,220,${state.screenFlash * 0.02})`;
+    ctx.fillStyle = `rgba(255,244,220,${state.screenFlash * 0.018})`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
-}
-
-function drawDayBadge() {
-  drawRoundedRect(26, 340, 150, 42, 18, "rgba(8,14,22,0.64)");
-  ctx.fillStyle = "#fff4dc";
-  ctx.font = "800 20px Montserrat";
-  ctx.fillText(`Day ${state.day}`, 50, 367);
 }
 
 function drawScene() {
@@ -914,17 +981,17 @@ function drawScene() {
 
   for (let y = 0; y < ROWS; y++) {
     for (let x = 0; x < COLS; x++) {
-      drawTile(x, y, state.tiles[y][x]);
+      drawTile(x, y, tileAt(x, y));
     }
   }
 
-  Object.keys(state.crops).forEach(k => {
-    const [x, y] = k.split(",").map(Number);
-    drawCrop(x, y, state.crops[k]);
+  Object.entries(state.crops).forEach(([position, crop]) => {
+    const [x, y] = position.split(",").map(Number);
+    drawCrop(x, y, crop);
   });
 
-  Object.keys(state.weeds).forEach(k => {
-    const [x, y] = k.split(",").map(Number);
+  Object.keys(state.weeds).forEach(position => {
+    const [x, y] = position.split(",").map(Number);
     drawWeed(x, y);
   });
 
@@ -939,13 +1006,13 @@ function updateParticles() {
     p.x += p.vx;
     p.y += p.vy;
 
-    if (p.y < 200) {
-      p.y = canvas.height - 120;
+    if (p.y < 180) {
+      p.y = canvas.height - 100;
       p.x = Math.random() * canvas.width;
     }
 
-    if (p.x < 0) p.x = canvas.width;
-    if (p.x > canvas.width) p.x = 0;
+    if (p.x < -10) p.x = canvas.width + 10;
+    if (p.x > canvas.width + 10) p.x = -10;
   });
 
   state.sparkles = state.sparkles.filter(s => {
@@ -955,25 +1022,35 @@ function updateParticles() {
     return s.life > 0;
   });
 
+  if (state.player.stepPulse > 0) {
+    state.player.stepPulse -= 1;
+  }
+
   if (state.screenFlash > 0) {
     state.screenFlash -= 1;
   }
 }
 
-function gameLoop() {
+function loop() {
   timeTick += 1;
   updateParticles();
   drawScene();
-  requestAnimationFrame(gameLoop);
+
+  if (timeTick - lastAutoSave > 1800) {
+    saveGame(true);
+    lastAutoSave = timeTick;
+  }
+
+  requestAnimationFrame(loop);
 }
 
-function handleCanvasTap(e) {
+function handleCanvasTap(event) {
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;
   const scaleY = canvas.height / rect.height;
 
-  const mx = (e.clientX - rect.left) * scaleX;
-  const my = (e.clientY - rect.top) * scaleY;
+  const mx = (event.clientX - rect.left) * scaleX;
+  const my = (event.clientY - rect.top) * scaleY;
 
   const tx = Math.floor((mx - MAP_X) / TILE);
   const ty = Math.floor((my - MAP_Y) / TILE);
@@ -993,26 +1070,7 @@ function handleCanvasTap(e) {
 }
 
 function bindEvents() {
-  document.getElementById("saveBtn").addEventListener("click", saveGame);
-
-  document.getElementById("plantBtn").addEventListener("click", plantSeed);
-  document.getElementById("waterBtn").addEventListener("click", waterCrop);
-  document.getElementById("harvestBtn").addEventListener("click", harvestCrop);
-  document.getElementById("clearBtn").addEventListener("click", clearWeeds);
-  document.getElementById("prayBtn").addEventListener("click", pray);
-
-  document.getElementById("upBtn").addEventListener("click", () => movePlayer(0, -1));
-  document.getElementById("downBtn").addEventListener("click", () => movePlayer(0, 1));
-  document.getElementById("leftBtn").addEventListener("click", () => movePlayer(-1, 0));
-  document.getElementById("rightBtn").addEventListener("click", () => movePlayer(1, 0));
-
-  document.querySelectorAll(".seedBtn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      selectedSeed = btn.dataset.seed;
-      setMessage(`${seedInfo[selectedSeed].name} seed selected.`);
-      updateUI();
-    });
-  });
+  document.getElementById("saveBtn").addEventListener("click", () => saveGame(false));
 
   document.getElementById("startBtn").addEventListener("click", () => {
     newGame();
@@ -1020,7 +1078,7 @@ function bindEvents() {
   });
 
   document.getElementById("continueBtn").addEventListener("click", () => {
-    if (!loadGameFromStorage()) {
+    if (!loadGame()) {
       newGame();
       setMessage("No saved journey found, so a new one has begun.");
     }
@@ -1036,30 +1094,42 @@ function bindEvents() {
     ui.helpModal.classList.add("hidden");
   });
 
+  document.getElementById("helpBackBtn").addEventListener("click", () => {
+    ui.helpModal.classList.add("hidden");
+  });
+
+  document.getElementById("upBtn").addEventListener("click", () => movePlayer(0, -1));
+  document.getElementById("downBtn").addEventListener("click", () => movePlayer(0, 1));
+  document.getElementById("leftBtn").addEventListener("click", () => movePlayer(-1, 0));
+  document.getElementById("rightBtn").addEventListener("click", () => movePlayer(1, 0));
+
+  document.getElementById("plantBtn").addEventListener("click", plantSeed);
+  document.getElementById("waterBtn").addEventListener("click", waterCrop);
+  document.getElementById("harvestBtn").addEventListener("click", harvestCrop);
+  document.getElementById("clearBtn").addEventListener("click", clearWeeds);
+  document.getElementById("prayBtn").addEventListener("click", pray);
+
+  document.querySelectorAll(".seed-option").forEach(button => {
+    button.addEventListener("click", () => {
+      selectedSeed = button.dataset.seed;
+      setMessage(`${seedInfo[selectedSeed].name} seed selected.`);
+      updateUI();
+    });
+  });
+
   canvas.addEventListener("click", handleCanvasTap);
 
-  document.addEventListener("keydown", e => {
-    const k = e.key.toLowerCase();
+  document.addEventListener("keydown", event => {
+    const k = event.key.toLowerCase();
 
     if (k === "arrowup" || k === "w") movePlayer(0, -1);
     if (k === "arrowdown" || k === "s") movePlayer(0, 1);
     if (k === "arrowleft" || k === "a") movePlayer(-1, 0);
     if (k === "arrowright" || k === "d") movePlayer(1, 0);
 
-    if (k === "1") {
-      selectedSeed = "faith";
-      updateUI();
-    }
-
-    if (k === "2") {
-      selectedSeed = "peace";
-      updateUI();
-    }
-
-    if (k === "3") {
-      selectedSeed = "kindness";
-      updateUI();
-    }
+    if (k === "1") selectedSeed = "faith";
+    if (k === "2") selectedSeed = "peace";
+    if (k === "3") selectedSeed = "kindness";
 
     if (k === "p") plantSeed();
     if (k === "e") waterCrop();
@@ -1067,14 +1137,16 @@ function bindEvents() {
     if (k === "c") clearWeeds();
     if (k === " ") pray();
     if (k === "n") newDay();
+
+    updateUI();
   });
 
-  setInterval(() => {
-    newDay();
-  }, 90000);
+  setInterval(newDay, 90000);
 }
 
-if (!CanvasRenderingContext2D.prototype.roundRect) {
+function enableRoundRectFallback() {
+  if (CanvasRenderingContext2D.prototype.roundRect) return;
+
   CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
     if (w < 2 * r) r = w / 2;
     if (h < 2 * r) r = h / 2;
@@ -1091,11 +1163,24 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
   };
 }
 
-function init() {
+async function init() {
+  enableRoundRectFallback();
+
   newGame();
   bindEvents();
   updateUI();
-  gameLoop();
+
+  await loadAssets();
+
+  ui.loadingScreen.classList.add("hidden");
+
+  if (localStorage.getItem(STORAGE_KEY)) {
+    ui.continueBtn.style.opacity = "1";
+  } else {
+    ui.continueBtn.style.opacity = "0.45";
+  }
+
+  loop();
 }
 
 init();
