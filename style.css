@@ -4,7 +4,6 @@
 }
 
 :root {
-  /* Forged Color Palette */
   --cream: #f8f0df;
   --cream-soft: rgba(248, 240, 223, 0.76);
   --muted: rgba(214, 224, 227, 0.72);
@@ -19,16 +18,14 @@
   --purple-1: #caa6ff;
   --purple-2: #8b61d7;
 
-  /* Modern Glassmorphism & Textures */
-  --glass: rgba(10, 18, 26, 0.75);
-  --glass-strong: rgba(7, 11, 16, 0.88);
+  --glass: rgba(10, 18, 26, 0.72);
+  --glass-strong: rgba(7, 11, 16, 0.9);
   --glass-soft: rgba(255, 255, 255, 0.04);
-  --stroke: rgba(233, 195, 95, 0.2);
-  --stroke-strong: rgba(233, 195, 95, 0.4);
-  --shadow-deep: 0 20px 50px rgba(0, 0, 0, 0.6);
+  --stroke: rgba(233, 195, 95, 0.18);
+  --stroke-strong: rgba(233, 195, 95, 0.38);
+  --shadow-deep: 0 20px 50px rgba(0, 0, 0, 0.62);
   --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.4);
   --inner-shine: inset 0 1px 1px rgba(255, 255, 255, 0.15);
-  --inner-depth: inset 0 -10px 24px rgba(0, 0, 0, 0.4);
 
   --safe-bottom: env(safe-area-inset-bottom);
   --safe-top: env(safe-area-inset-top);
@@ -44,7 +41,7 @@ body {
   color: var(--cream);
   font-family: "Montserrat", Arial, sans-serif;
   background:
-    radial-gradient(circle at 50% 0%, rgba(233, 195, 95, 0.08), transparent 60%),
+    radial-gradient(circle at 50% 0%, rgba(233, 195, 95, 0.09), transparent 60%),
     linear-gradient(180deg, #16222d 0%, #0a1118 100%);
 }
 
@@ -57,13 +54,15 @@ button {
   color: inherit;
   transition:
     transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.1s linear,
-    filter 0.2s ease;
+    box-shadow 0.14s linear,
+    filter 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
 button:active {
   transform: translateY(2px) scale(0.97);
-  filter: brightness(0.9);
+  filter: brightness(0.92);
 }
 
 .hidden {
@@ -75,8 +74,8 @@ button:active {
   height: 100svh;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: calc(10px + var(--safe-top)) 12px calc(90px + var(--safe-bottom)) 12px;
+  gap: 8px;
+  padding: calc(8px + var(--safe-top)) 12px calc(90px + var(--safe-bottom)) 12px;
   overflow: hidden;
   position: relative;
 }
@@ -87,7 +86,7 @@ button:active {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle at 50% 20%, transparent 0%, transparent 40%, rgba(0, 0, 0, 0.4) 100%),
+    radial-gradient(circle at 50% 22%, transparent 0%, transparent 42%, rgba(0, 0, 0, 0.42) 100%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 34%);
   z-index: 1;
 }
@@ -97,7 +96,7 @@ button:active {
   z-index: 2;
 }
 
-/* SHARED PREMIUM PANEL */
+/* SHARED PANELS */
 .forged-panel {
   position: relative;
   overflow: hidden;
@@ -110,8 +109,8 @@ button:active {
   border-radius: inherit;
   pointer-events: none;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.14), transparent 30%),
-    radial-gradient(circle at 50% 0%, rgba(233, 195, 95, 0.15), transparent 55%);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.13), transparent 30%),
+    radial-gradient(circle at 50% 0%, rgba(233, 195, 95, 0.12), transparent 55%);
   opacity: 0.9;
   z-index: 0;
 }
@@ -121,7 +120,7 @@ button:active {
   z-index: 1;
 }
 
-/* THE FORGED NOISE TEXTURE */
+/* NOISE */
 .hud-glass,
 .action-dock,
 .loading-card,
@@ -162,8 +161,8 @@ button:active {
     var(--shadow-soft),
     var(--inner-shine),
     inset 0 -5px 15px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(20px) saturate(120%);
-  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
 }
 
 .gold-text {
@@ -178,13 +177,13 @@ button:active {
 .brand-copy h1 {
   font-family: "Cinzel", serif;
   margin: 2px 0 0;
-  font-size: clamp(1.6rem, 7vw, 2.2rem);
+  font-size: clamp(1.5rem, 6.5vw, 2.05rem);
   line-height: 0.95;
   font-weight: 900;
-  background: linear-gradient(180deg, #fff 30%, var(--gold) 100%);
+  background: linear-gradient(180deg, #fff 28%, var(--gold) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 4px 12px rgba(191, 87, 0, 0.5));
+  filter: drop-shadow(0 4px 12px rgba(191, 87, 0, 0.45));
 }
 
 /* LOADING SCREEN */
@@ -247,7 +246,7 @@ button:active {
 .loading-kicker,
 .studio-tag,
 .eyebrow {
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   letter-spacing: 3px;
   text-transform: uppercase;
 }
@@ -505,9 +504,9 @@ button:active {
 }
 
 .brand-panel {
-  height: 85px;
+  height: 76px;
   border-radius: 24px;
-  padding: 12px 18px;
+  padding: 10px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -524,30 +523,30 @@ button:active {
 }
 
 .brand-copy p {
-  margin: 6px 0 0;
+  margin: 5px 0 0;
   color: var(--gold);
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 4px;
-  font-size: 0.72rem;
+  letter-spacing: 3px;
+  font-size: 0.66rem;
 }
 
 .save-button {
-  height: 50px;
-  min-width: 90px;
-  padding: 0 20px;
+  height: 46px;
+  min-width: 86px;
+  padding: 0 18px;
   border-radius: 16px;
   color: #fff;
   font-weight: 900;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   text-transform: uppercase;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.15), transparent),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent),
     linear-gradient(135deg, var(--gold-deep), #f2a23b);
   box-shadow:
-    0 10px 25px rgba(191, 87, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+    0 10px 25px rgba(191, 87, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   flex-shrink: 0;
 }
 
@@ -561,24 +560,44 @@ button:active {
   position: relative;
   height: 100%;
   overflow: hidden;
-  border-radius: 30px;
-  background: #122517;
-  border: 1px solid var(--stroke);
-  box-shadow: var(--shadow-deep);
+  border-radius: 32px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 22%),
+    #122517;
+  border: 1px solid rgba(233, 195, 95, 0.16);
+  box-shadow:
+    0 24px 56px rgba(0, 0, 0, 0.52),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  isolation: isolate;
+}
+
+.game-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.1), transparent 18%, transparent 78%, rgba(0, 0, 0, 0.18)),
+    radial-gradient(circle at center, transparent 50%, rgba(0, 0, 0, 0.16) 100%);
 }
 
 #gameCanvas {
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: contain;
-  object-position: bottom;
+  object-fit: cover;
+  object-position: center 38%;
+  filter: saturate(1.04) contrast(1.02);
+  position: relative;
+  z-index: 0;
 }
 
 .hud-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 2;
 }
 
 .hud-layer button,
@@ -586,24 +605,24 @@ button:active {
   pointer-events: auto;
 }
 
-/* HUD TOP */
+/* TOP HUD - TIGHTER SO BOARD HAS MORE ROOM */
 .top-hud {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  right: 12px;
+  top: 10px;
+  left: 10px;
+  right: 10px;
   display: grid;
-  gap: 8px;
+  gap: 7px;
 }
 
 .quest-pill {
   border-radius: 18px;
-  padding: 12px 16px;
-  min-height: 55px;
+  padding: 10px 14px;
+  min-height: 48px;
 }
 
 .hud-label {
-  font-size: 0.55rem;
+  font-size: 0.52rem;
   letter-spacing: 2px;
   text-transform: uppercase;
   font-weight: 900;
@@ -611,8 +630,8 @@ button:active {
 }
 
 .quest-copy {
-  font-size: 0.8rem;
-  line-height: 1.2;
+  font-size: 0.76rem;
+  line-height: 1.18;
   font-weight: 800;
   white-space: nowrap;
   overflow: hidden;
@@ -622,88 +641,129 @@ button:active {
 .stat-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: 7px;
 }
 
 .stat-card {
-  min-height: 50px;
+  min-height: 42px;
   border-radius: 16px;
-  padding: 8px 10px;
+  padding: 7px 8px;
   text-align: center;
 }
 
 .stat-card span {
   display: block;
-  color: rgba(248, 240, 223, 0.7);
-  font-size: 0.55rem;
+  color: rgba(248, 240, 223, 0.72);
+  font-size: 0.5rem;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 4px;
+  letter-spacing: 0.9px;
+  margin-bottom: 3px;
   font-weight: 800;
 }
 
 .stat-card strong {
   display: block;
-  font-size: 1.15rem;
+  font-size: 0.98rem;
   line-height: 1;
   font-weight: 900;
   color: white;
 }
 
-/* SEED DOCK - MOVED TO BOTTOM OF GAME FIELD */
+/* MESSAGE */
+.message-toast {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 126px;
+  width: calc(100% - 44px);
+  max-width: 700px;
+  min-height: auto;
+  border-radius: 18px;
+  padding: 11px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cream);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.28;
+  text-align: center;
+  white-space: normal;
+  background: rgba(7, 12, 18, 0.72);
+  border: 1px solid rgba(233, 195, 95, 0.1);
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 4;
+}
+
+/* PREMIUM SEED SELECTOR */
 .seed-dock {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 18px;
-  width: calc(100% - 48px);
+  bottom: 46px;
+  width: calc(100% - 54px);
   max-width: 720px;
-  border-radius: 24px;
   padding: 10px;
   display: flex;
-  flex-direction: row;
   gap: 10px;
-  background: rgba(7, 12, 18, 0.82);
-  border: 1px solid var(--stroke);
-  box-shadow: var(--shadow-deep), var(--inner-shine);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  z-index: 50;
+  align-items: stretch;
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent),
+    linear-gradient(180deg, rgba(11, 18, 28, 0.88), rgba(5, 9, 14, 0.88));
+  border: 1px solid rgba(233, 195, 95, 0.16);
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  z-index: 5;
 }
 
 .seed-option {
-  min-height: 56px;
+  min-height: 54px;
   flex: 1;
   border-radius: 18px;
-  padding: 8px 12px;
+  padding: 10px 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   color: var(--cream);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent),
-    linear-gradient(135deg, var(--blue-3), #0a1118);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent),
+    linear-gradient(135deg, rgba(15, 29, 46, 0.98), rgba(8, 15, 25, 0.98));
   border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 12px 30px rgba(0, 0, 0, 0.28);
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 8px 18px rgba(0, 0, 0, 0.18);
 }
 
 .seed-option strong {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 900;
+  letter-spacing: 0.15px;
 }
 
 .seed-option.active {
+  color: #fff8e9;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent),
-    linear-gradient(135deg, var(--green-2), var(--green-1));
-  border: 1px solid var(--gold);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent),
+    linear-gradient(135deg, rgba(108, 191, 129, 0.96), rgba(61, 131, 89, 0.96));
+  border: 1px solid rgba(233, 195, 95, 0.86);
   box-shadow:
-    0 8px 20px rgba(124, 205, 130, 0.2),
-    0 0 0 1px rgba(233, 195, 95, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    0 10px 22px rgba(74, 135, 88, 0.26),
+    0 0 0 1px rgba(233, 195, 95, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.seed-option:not(.active):hover {
+  border-color: rgba(233, 195, 95, 0.2);
+  filter: brightness(1.05);
 }
 
 .seed-dot {
@@ -729,32 +789,6 @@ button:active {
   background: #86d685;
 }
 
-/* MESSAGE TOAST - ABOVE SEED DOCK */
-.message-toast {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 94px;
-  min-height: auto;
-  border-radius: 18px;
-  padding: 14px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--cream);
-  font-size: 0.9rem;
-  font-weight: 800;
-  line-height: 1.35;
-  text-align: center;
-  white-space: normal;
-  background: rgba(7, 12, 18, 0.82);
-  border: 1px solid var(--stroke);
-  box-shadow: var(--shadow-deep), var(--inner-shine);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  z-index: 50;
-}
-
 /* ACTION DOCK */
 .action-dock {
   position: fixed;
@@ -767,7 +801,8 @@ button:active {
   gap: 8px;
   padding: 10px;
   border-radius: 28px;
-  background: linear-gradient(180deg, #1c2a35 0%, #070b10 100%);
+  background:
+    linear-gradient(180deg, rgba(28, 42, 53, 0.96) 0%, rgba(7, 11, 16, 0.98) 100%);
   border: 1px solid var(--stroke);
   box-shadow:
     0 -15px 44px rgba(0, 0, 0, 0.5),
@@ -784,12 +819,6 @@ button:active {
   color: white;
   background: transparent;
   border: 1px solid transparent;
-}
-
-.action-button:active .action-icon {
-  transform: translateY(2px) scale(0.9);
-  box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.6);
-  filter: brightness(0.8);
 }
 
 .action-button strong {
@@ -810,6 +839,12 @@ button:active {
   transition:
     transform 0.1s ease,
     box-shadow 0.1s ease;
+}
+
+.action-button:active .action-icon {
+  transform: translateY(2px) scale(0.9);
+  box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.6);
+  filter: brightness(0.8);
 }
 
 .plant-icon {
@@ -934,92 +969,102 @@ button:active {
   transform: rotate(22deg);
 }
 
-/* MOBILE RESPONSIVENESS */
+/* MOBILE */
 @media (max-width: 390px) {
   .game-app {
     padding-left: 8px;
     padding-right: 8px;
-  }
-
-  .brand-panel {
-    height: 78px;
-    padding: 10px 14px;
-  }
-
-  .brand-copy h1 {
-    font-size: 1.5rem;
-  }
-
-  .brand-copy p {
-    font-size: 0.62rem;
-    letter-spacing: 3px;
-  }
-
-  .save-button {
-    min-width: 75px;
-    font-size: 0.85rem;
-    height: 44px;
-  }
-
-  .top-hud {
-    top: 10px;
-    left: 10px;
-    right: 10px;
-  }
-
-  .quest-pill {
-    padding: 11px 14px;
-  }
-
-  .quest-copy {
-    font-size: 0.76rem;
-  }
-
-  .stat-row {
     gap: 7px;
   }
 
+  .brand-panel {
+    height: 72px;
+    padding: 9px 14px;
+  }
+
+  .brand-copy h1 {
+    font-size: 1.38rem;
+  }
+
+  .brand-copy p {
+    font-size: 0.6rem;
+    letter-spacing: 2.5px;
+  }
+
+  .save-button {
+    min-width: 74px;
+    font-size: 0.82rem;
+    height: 42px;
+    padding: 0 16px;
+  }
+
+  .top-hud {
+    top: 9px;
+    left: 9px;
+    right: 9px;
+    gap: 6px;
+  }
+
+  .quest-pill {
+    min-height: 44px;
+    padding: 9px 12px;
+  }
+
+  .quest-copy {
+    font-size: 0.72rem;
+  }
+
+  .stat-row {
+    gap: 6px;
+  }
+
   .stat-card {
-    min-height: 48px;
-    padding: 8px 6px;
+    min-height: 40px;
+    padding: 6px 5px;
   }
 
   .stat-card span {
-    font-size: 0.5rem;
-    letter-spacing: 0.7px;
+    font-size: 0.46rem;
+    letter-spacing: 0.55px;
   }
 
   .stat-card strong {
-    font-size: 1.05rem;
+    font-size: 0.92rem;
+  }
+
+  #gameCanvas {
+    object-position: center 36%;
+  }
+
+  .message-toast {
+    width: calc(100% - 28px);
+    bottom: 114px;
+    padding: 9px 12px;
+    font-size: 0.72rem;
+    border-radius: 16px;
   }
 
   .seed-dock {
-    bottom: 14px;
-    width: calc(100% - 36px);
+    width: calc(100% - 32px);
+    bottom: 40px;
     padding: 8px;
     gap: 8px;
+    border-radius: 20px;
   }
 
   .seed-option {
-    min-height: 48px;
-    padding: 6px 8px;
+    min-height: 46px;
+    padding: 7px 8px;
     gap: 7px;
   }
 
   .seed-option strong {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
   }
 
   .seed-dot {
-    width: 12px;
-    height: 12px;
-  }
-
-  .message-toast {
-    bottom: 82px;
-    font-size: 0.75rem;
-    padding: 10px;
-    border-radius: 16px;
+    width: 11px;
+    height: 11px;
   }
 
   .action-dock {
@@ -1037,41 +1082,46 @@ button:active {
   }
 }
 
+/* SHORT SCREENS */
 @media (max-height: 740px) {
   .game-app {
-    gap: 8px;
     padding-top: calc(8px + var(--safe-top));
+    gap: 7px;
   }
 
   .brand-panel {
-    height: 74px;
+    height: 70px;
   }
 
   .brand-copy h1 {
-    font-size: 1.35rem;
-  }
-
-  .brand-copy p {
-    margin-top: 4px;
+    font-size: 1.3rem;
   }
 
   .quest-pill {
-    min-height: 48px;
-    padding: 10px 14px;
+    min-height: 42px;
+    padding: 9px 12px;
   }
 
   .stat-card {
-    min-height: 44px;
+    min-height: 38px;
   }
 
-  .seed-dock {
-    bottom: 12px;
+  #gameCanvas {
+    object-position: center 34%;
   }
 
   .message-toast {
-    bottom: 78px;
-    font-size: 0.74rem;
-    padding: 9px 12px;
+    bottom: 108px;
+    font-size: 0.7rem;
+    padding: 8px 11px;
+  }
+
+  .seed-dock {
+    bottom: 36px;
+  }
+
+  .seed-option {
+    min-height: 42px;
   }
 
   .action-button {
