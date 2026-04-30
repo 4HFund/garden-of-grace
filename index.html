@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
   <link
-    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Montserrat:wght@400;500;600;700;800;900&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Montserrat:wght@400;500;600;700;800;900&display=swap"
     rel="stylesheet"
   >
 
@@ -25,26 +25,26 @@
   <div id="gameApp" class="game-app">
 
     <div id="loadingScreen" class="loading-screen">
-      <div class="loading-card">
-        <div class="loading-mark"></div>
-        <div class="loading-kicker">Preparing the Field</div>
-        <h1>Garden of Grace</h1>
-        <p id="loadingText">Loading assets...</p>
-        <div class="loading-bar">
+      <div class="loading-card forged-panel">
+        <div class="loading-mark" aria-hidden="true"></div>
+        <div class="loading-kicker gold-text">Preparing the Heartfield</div>
+        <h1 class="cinzel-title">Garden of Grace</h1>
+        <p id="loadingText">Forging assets...</p>
+        <div class="loading-bar" aria-hidden="true">
           <div id="loadingFill" class="loading-fill"></div>
         </div>
       </div>
     </div>
 
     <div id="titleScreen" class="title-screen">
-      <div class="title-bg-glow"></div>
-      <div class="title-orbit one"></div>
-      <div class="title-orbit two"></div>
+      <div class="title-bg-glow" aria-hidden="true"></div>
+      <div class="title-orbit one" aria-hidden="true"></div>
+      <div class="title-orbit two" aria-hidden="true"></div>
 
-      <section class="title-card">
-        <div class="studio-tag">Faith Farming RPG</div>
-        <h1>Garden of Grace</h1>
-        <h2>First Harvest</h2>
+      <section class="title-card forged-panel">
+        <div class="studio-tag gold-text">Faith Farming RPG</div>
+        <h1 class="cinzel-title">Garden of Grace</h1>
+        <h2 class="gold-text">First Harvest</h2>
 
         <p>
           Restore a forgotten field, clear the weeds of worry, plant seeds of faith,
@@ -52,7 +52,7 @@
         </p>
 
         <div class="title-button-stack">
-          <button id="startBtn" class="btn btn-primary">Start Journey</button>
+          <button id="startBtn" class="btn btn-primary metal-sheen">Start Journey</button>
           <button id="continueBtn" class="btn btn-secondary">Continue</button>
           <button id="howBtn" class="btn btn-ghost">How to Play</button>
         </div>
@@ -60,13 +60,13 @@
     </div>
 
     <div id="helpModal" class="modal hidden">
-      <section class="modal-card">
+      <section class="modal-card forged-panel">
         <div class="modal-header">
           <div>
-            <div class="eyebrow">Guide</div>
-            <h2>How to Play</h2>
+            <div class="eyebrow gold-text">Guide</div>
+            <h2 class="cinzel-title">How to Play</h2>
           </div>
-          <button id="closeHelpBtn" class="icon-close">×</button>
+          <button id="closeHelpBtn" class="icon-close" aria-label="Close guide">×</button>
         </div>
 
         <div class="help-list">
@@ -96,19 +96,19 @@
           </div>
         </div>
 
-        <button id="helpBackBtn" class="btn btn-primary">Back to Game</button>
+        <button id="helpBackBtn" class="btn btn-primary metal-sheen">Back to Game</button>
       </section>
     </div>
 
     <header class="game-header">
       <div class="brand-panel">
         <div class="brand-copy">
-          <div class="eyebrow">Faith Farming RPG</div>
-          <h1>Garden of Grace</h1>
+          <div class="eyebrow gold-text">Faith Farming RPG</div>
+          <h1 class="cinzel-title">Garden of Grace</h1>
           <p>First Harvest</p>
         </div>
 
-        <button id="saveBtn" class="save-button">Save</button>
+        <button id="saveBtn" class="save-button metal-sheen">Save</button>
       </div>
     </header>
 
@@ -121,7 +121,7 @@
 
           <section class="top-hud">
             <div class="quest-pill hud-glass">
-              <div class="hud-label">Current Quest</div>
+              <div class="hud-label gold-text">Current Quest</div>
               <div id="questText" class="quest-copy">
                 Clear the weeds choking the field.
               </div>
@@ -150,35 +150,35 @@
             </div>
           </section>
 
-          <section class="seed-dock hud-glass">
+          <section class="seed-dock hud-glass" aria-label="Seed selector">
             <button class="seed-option active" data-seed="faith">
-              <span class="seed-dot faith-dot"></span>
+              <span class="seed-dot faith-dot" aria-hidden="true"></span>
               <strong>Faith</strong>
             </button>
 
             <button class="seed-option" data-seed="peace">
-              <span class="seed-dot peace-dot"></span>
+              <span class="seed-dot peace-dot" aria-hidden="true"></span>
               <strong>Peace</strong>
             </button>
 
             <button class="seed-option" data-seed="kindness">
-              <span class="seed-dot kindness-dot"></span>
+              <span class="seed-dot kindness-dot" aria-hidden="true"></span>
               <strong>Kindness</strong>
             </button>
           </section>
 
           <section class="premium-dpad hud-glass" aria-label="Movement controls">
-            <div></div>
+            <div aria-hidden="true"></div>
             <button id="upBtn" class="dpad-button dpad-up" aria-label="Move up">
               <span></span>
             </button>
-            <div></div>
+            <div aria-hidden="true"></div>
 
             <button id="leftBtn" class="dpad-button dpad-left" aria-label="Move left">
               <span></span>
             </button>
 
-            <div class="dpad-center">
+            <div class="dpad-center" aria-hidden="true">
               <div></div>
             </div>
 
@@ -186,14 +186,14 @@
               <span></span>
             </button>
 
-            <div></div>
+            <div aria-hidden="true"></div>
             <button id="downBtn" class="dpad-button dpad-down" aria-label="Move down">
               <span></span>
             </button>
-            <div></div>
+            <div aria-hidden="true"></div>
           </section>
 
-          <section id="messageBox" class="message-toast hud-glass">
+          <section id="messageBox" class="message-toast hud-glass" aria-live="polite">
             Welcome to the Heartfield. Restore what’s broken and grow in grace.
           </section>
 
@@ -203,27 +203,27 @@
 
     <nav class="action-dock">
       <button id="plantBtn" class="action-button">
-        <span class="action-icon plant-icon"></span>
+        <span class="action-icon plant-icon" aria-hidden="true"></span>
         <strong>Plant</strong>
       </button>
 
       <button id="waterBtn" class="action-button">
-        <span class="action-icon water-icon"></span>
+        <span class="action-icon water-icon" aria-hidden="true"></span>
         <strong>Water</strong>
       </button>
 
       <button id="harvestBtn" class="action-button">
-        <span class="action-icon harvest-icon"></span>
+        <span class="action-icon harvest-icon" aria-hidden="true"></span>
         <strong>Harvest</strong>
       </button>
 
       <button id="clearBtn" class="action-button">
-        <span class="action-icon clear-icon"></span>
+        <span class="action-icon clear-icon" aria-hidden="true"></span>
         <strong>Clear</strong>
       </button>
 
-      <button id="prayBtn" class="action-button pray-action">
-        <span class="action-icon pray-icon"></span>
+      <button id="prayBtn" class="action-button pray-action pray-special">
+        <span class="action-icon pray-icon" aria-hidden="true"></span>
         <strong>Pray</strong>
       </button>
     </nav>
