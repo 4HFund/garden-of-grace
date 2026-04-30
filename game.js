@@ -1,7 +1,7 @@
 /**
  * GARDEN OF GRACE: PREMIUM V2 - FULL CONSOLIDATED EDITION
  * Performance Upgrades: Offscreen Canvas, Delta-Time Smooth Movement, Object-State Machine
- * Retained: All original drawing logic, fallback crops, and world-building
+ * AAA Polish: Integrated Mobile Haptic Feedback Engine
  */
 
 const canvas = document.getElementById("gameCanvas");
@@ -78,7 +78,7 @@ let selectedSeed = "faith";
 let timeTick = 0;
 let lastAutoSave = 0;
 let state = null;
-let lastTime = 0; // For Delta Time
+let lastTime = 0; 
 
 // Movement Logic State
 const playerMotion = {
@@ -89,6 +89,15 @@ const playerMotion = {
     lerpSpeed: 0.15,
     bob: 0
 };
+
+// --- AAA HAPTIC ENGINE ---
+// Triggers mobile device vibration for tactile feedback
+function haptic(pattern) {
+  if (navigator && navigator.vibrate) {
+    // Catch errors silently for browsers that block haptics before user interaction
+    try { navigator.vibrate(pattern); } catch (e) {}
+  }
+}
 
 function defaultState() {
   return {
@@ -180,10 +189,13 @@ function movePlayer(dx, dy) {
   if (dy < 0) state.player.facing = "up";
 
   if (isBlocked(nx, ny)) {
+    haptic([10, 30, 10]); // Error vibration pattern
     setMessage("That path is blocked for now.");
     bumpEffect(state.player.x, state.player.y);
     return;
   }
+
+  haptic(10); // Light, crisp physical click for movement
 
   state.player.x = nx;
   state.player.y = ny;
@@ -198,10 +210,12 @@ function movePlayer(dx, dy) {
 
 function plantSeed() {
   const x = state.player.x, y = state.player.y, k = key(x, y);
-  if (tileAt(x, y) !== "soil") { setMessage("Stand on soil to plant."); bumpEffect(x, y); return; }
-  if (state.weeds[k]) { setMessage("Clear the weeds first."); bumpEffect(x, y); return; }
-  if (state.crops[k]) { setMessage("Something is already growing here."); bumpEffect(x, y); return; }
+  
+  if (tileAt(x, y) !== "soil") { haptic([10, 30, 10]); setMessage("Stand on soil to plant."); bumpEffect(x, y); return; }
+  if (state.weeds[k]) { haptic([10, 30, 10]); setMessage("Clear the weeds first."); bumpEffect(x, y); return; }
+  if (state.crops[k]) { haptic([10, 30, 10]); setMessage("Something is already growing here."); bumpEffect(x, y); return; }
 
+  haptic(20); // Satisfying solid click for action
   state.crops[k] = { type: selectedSeed, growth: 0, watered: false, plantedAt: state.day };
   const info = seedInfo[selectedSeed];
   addSparkles(x, y, 18, info.glow);
@@ -213,9 +227,11 @@ function plantSeed() {
 function waterCrop() {
   const k = key(state.player.x, state.player.y);
   const crop = state.crops[k];
-  if (!crop) { setMessage("Nothing here to water."); bumpEffect(state.player.x, state.player.y); return; }
-  if (crop.watered) { setMessage("Already watered today."); return; }
+  
+  if (!crop) { haptic([10, 30, 10]); setMessage("Nothing here to water."); bumpEffect(state.player.x, state.player.y); return; }
+  if (crop.watered) { haptic([10, 30, 10]); setMessage("Already watered today."); return; }
 
+  haptic(15); 
   crop.watered = true;
   crop.growth = Math.min(3, crop.growth + 1);
   addSparkles(state.player.x, state.player.y, 14, "rgba(121,199,239,0.86)");
@@ -227,9 +243,11 @@ function waterCrop() {
 function harvestCrop() {
   const k = key(state.player.x, state.player.y);
   const crop = state.crops[k];
-  if (!crop) { setMessage("Nothing ready for harvest."); bumpEffect(state.player.x, state.player.y); return; }
-  if (crop.growth < 3) { setMessage("Patience is part of the harvest."); bumpEffect(state.player.x, state.player.y); return; }
+  
+  if (!crop) { haptic([10, 30, 10]); setMessage("Nothing ready for harvest."); bumpEffect(state.player.x, state.player.y); return; }
+  if (crop.growth < 3) { haptic([10, 30, 10]); setMessage("Patience is part of the harvest."); bumpEffect(state.player.x, state.player.y); return; }
 
+  haptic([20, 40, 20]); // Rewarding triple burst
   const info = seedInfo[crop.type];
   state[info.stat] += 1;
   state.harvest += 1;
@@ -242,7 +260,10 @@ function harvestCrop() {
 
 function clearWeeds() {
   const k = key(state.player.x, state.player.y);
-  if (!state.weeds[k]) { setMessage("No weeds here."); bumpEffect(state.player.x, state.player.y); return; }
+  
+  if (!state.weeds[k]) { haptic([10, 30, 10]); setMessage("No weeds here."); bumpEffect(state.player.x, state.player.y); return; }
+  
+  haptic(25); // Heavier click for clearing
   delete state.weeds[k];
   state.kindness += 1;
   addSparkles(state.player.x, state.player.y, 24, "rgba(134,214,133,0.86)");
@@ -252,7 +273,9 @@ function clearWeeds() {
 }
 
 function pray() {
-  if (state.prayedToday) { setMessage("You already prayed today."); return; }
+  if (state.prayedToday) { haptic([10, 30, 10]); setMessage("You already prayed today."); return; }
+  
+  haptic([30, 50, 30, 50, 40]); // Heartbeat vibration pattern
   state.prayedToday = true;
   state.peace += 1;
   Object.values(state.crops).forEach(c => { if (c.watered && c.growth < 3) c.growth += 1; });
@@ -499,7 +522,6 @@ async function init() {
   requestAnimationFrame(mainLoop);
 }
 
-// (Keeping your bindEvents and UI logic identical as before)
 function setMessage(text) { state.message = text; ui.messageBox.textContent = text; }
 function updateUI() {
   ui.faithStat.textContent = state.faith; ui.peaceStat.textContent = state.peace;
@@ -507,12 +529,43 @@ function updateUI() {
 }
 
 function bindEvents() {
-    document.getElementById("startBtn").onclick = () => { ui.titleScreen.classList.add("hidden"); };
+    document.getElementById("startBtn").onclick = () => { 
+        haptic(30); 
+        ui.titleScreen.classList.add("hidden"); 
+    };
+    
+    document.getElementById("continueBtn").onclick = () => { 
+        haptic(30); 
+        ui.titleScreen.classList.add("hidden"); 
+    };
+
+    // Control Buttons
+    document.getElementById("upBtn").onclick = () => movePlayer(0, -1);
+    document.getElementById("downBtn").onclick = () => movePlayer(0, 1);
+    document.getElementById("leftBtn").onclick = () => movePlayer(-1, 0);
+    document.getElementById("rightBtn").onclick = () => movePlayer(1, 0);
+
+    // Action Buttons
     document.getElementById("plantBtn").onclick = plantSeed;
     document.getElementById("waterBtn").onclick = waterCrop;
     document.getElementById("harvestBtn").onclick = harvestCrop;
     document.getElementById("clearBtn").onclick = clearWeeds;
     document.getElementById("prayBtn").onclick = pray;
+
+    // Seed Selection
+    document.querySelectorAll(".seed-option").forEach(button => {
+        button.addEventListener("click", () => {
+          haptic(10);
+          selectedSeed = button.dataset.seed;
+          document.querySelectorAll(".seed-option").forEach(b => b.classList.remove("active"));
+          button.classList.add("active");
+          setMessage(`${seedInfo[selectedSeed].name} seed selected.`);
+          updateUI();
+        });
+    });
+
+    // Save Button
+    document.getElementById("saveBtn").onclick = () => { haptic(20); saveGame(false); };
     
     document.addEventListener("keydown", e => {
         const k = e.key.toLowerCase();
