@@ -17,7 +17,20 @@
     </header>
 
     <main class="gameWrap">
-      <canvas id="gameCanvas" width="960" height="540"></canvas>
+      <section class="playArea">
+        <canvas id="gameCanvas" width="960" height="700"></canvas>
+
+        <section class="mobileControls">
+          <button id="upBtn">▲</button>
+          <div>
+            <button id="leftBtn">◀</button>
+            <button id="downBtn">▼</button>
+            <button id="rightBtn">▶</button>
+          </div>
+        </section>
+
+        <div id="messageBox">Welcome to the Garden of Grace.</div>
+      </section>
 
       <section class="sidePanel">
         <h2>Today’s Journey</h2>
@@ -47,21 +60,10 @@
         </div>
 
         <p class="hint">
-          Move with arrow keys/WASD. Tap a tile to walk there. Use actions when standing on a garden tile.
+          Tap the arrows to move. Stand on a garden tile, then choose an action.
         </p>
       </section>
     </main>
-
-    <section class="mobileControls">
-      <button id="upBtn">▲</button>
-      <div>
-        <button id="leftBtn">◀</button>
-        <button id="downBtn">▼</button>
-        <button id="rightBtn">▶</button>
-      </div>
-    </section>
-
-    <div id="messageBox">Welcome to the Garden of Grace.</div>
   </div>
 
   <script src="game.js"></script>
