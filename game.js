@@ -7,7 +7,7 @@ const ROWS = 8;
 const MAP_WIDTH = COLS * TILE;
 const MAP_HEIGHT = ROWS * TILE;
 const MAP_X = Math.round((canvas.width - MAP_WIDTH) / 2);
-const MAP_Y = 420;
+const MAP_Y = 510;
 
 const STORAGE_KEY = "gardenOfGraceAssetBuildV1";
 
