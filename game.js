@@ -1,13 +1,11 @@
 /**
  * GARDEN OF GRACE: PREMIUM V2 - FULL CONSOLIDATED EDITION
- * Performance Upgrades: Offscreen Canvas, Delta-Time Smooth Movement, Object-State Machine
- * AAA Polish: Integrated Mobile Haptic Feedback Engine
+ * Fixes Applied: Restored drawCoverImage & drawContainImage functions
  */
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// Performance Buffer: Static Background
 const bgCanvas = document.createElement("canvas");
 const bgCtx = bgCanvas.getContext("2d");
 bgCanvas.width = canvas.width;
@@ -32,30 +30,9 @@ const ASSET_PATHS = {
 };
 
 const seedInfo = {
-  faith: {
-    name: "Faith",
-    stat: "faith",
-    cropName: "Mustard Bloom",
-    color: "#e9c35f",
-    glow: "rgba(233,195,95,0.42)",
-    message: "You planted a seed of faith. Small beginnings still matter."
-  },
-  peace: {
-    name: "Peace",
-    stat: "peace",
-    cropName: "Stillwater Lily",
-    color: "#79c7ef",
-    glow: "rgba(121,199,239,0.42)",
-    message: "You planted peace. Let quiet places grow."
-  },
-  kindness: {
-    name: "Kindness",
-    stat: "kindness",
-    cropName: "Mercy Vine",
-    color: "#86d685",
-    glow: "rgba(134,214,133,0.42)",
-    message: "You planted kindness. Grace becomes visible through action."
-  }
+  faith: { name: "Faith", stat: "faith", cropName: "Mustard Bloom", color: "#e9c35f", glow: "rgba(233,195,95,0.42)", message: "You planted a seed of faith. Small beginnings still matter." },
+  peace: { name: "Peace", stat: "peace", cropName: "Stillwater Lily", color: "#79c7ef", glow: "rgba(121,199,239,0.42)", message: "You planted peace. Let quiet places grow." },
+  kindness: { name: "Kindness", stat: "kindness", cropName: "Mercy Vine", color: "#86d685", glow: "rgba(134,214,133,0.42)", message: "You planted kindness. Grace becomes visible through action." }
 };
 
 const ui = {
@@ -80,21 +57,10 @@ let lastAutoSave = 0;
 let state = null;
 let lastTime = 0; 
 
-// Movement Logic State
-const playerMotion = {
-    currentX: 1,
-    currentY: 6,
-    targetX: 1,
-    targetY: 6,
-    lerpSpeed: 0.15,
-    bob: 0
-};
+const playerMotion = { currentX: 1, currentY: 6, targetX: 1, targetY: 6, lerpSpeed: 0.15, bob: 0 };
 
-// --- AAA HAPTIC ENGINE ---
-// Triggers mobile device vibration for tactile feedback
 function haptic(pattern) {
   if (navigator && navigator.vibrate) {
-    // Catch errors silently for browsers that block haptics before user interaction
     try { navigator.vibrate(pattern); } catch (e) {}
   }
 }
@@ -102,17 +68,13 @@ function haptic(pattern) {
 function defaultState() {
   return {
     player: { x: 1, y: 6, facing: "right", stepPulse: 0 },
-    day: 1,
-    faith: 1, peace: 1, kindness: 1, harvest: 0,
-    prayedToday: false,
+    day: 1, faith: 1, peace: 1, kindness: 1, harvest: 0, prayedToday: false,
     tiles: [], crops: {}, weeds: {},
-    particles: [], sparkles: [], ripples: [],
-    screenFlash: 0,
+    particles: [], sparkles: [], ripples: [], screenFlash: 0,
     message: "Welcome to the Heartfield. Restore what’s broken and grow in grace."
   };
 }
 
-// --- UTILITIES ---
 const key = (x, y) => `${x},${y}`;
 const inBounds = (x, y) => x >= 0 && x < COLS && y >= 0 && y < ROWS;
 const tileAt = (x, y) => inBounds(x, y) ? state.tiles[y][x] : "void";
@@ -120,7 +82,27 @@ const isBlocked = (x, y) => ["void", "water", "fence"].includes(tileAt(x, y));
 const centerOfTile = (x, y) => ({ x: MAP_X + x * TILE + TILE / 2, y: MAP_Y + y * TILE + TILE / 2 });
 const imageReady = (img) => img && img.complete && img.naturalWidth > 0;
 
-// --- ASSET LOADING ---
+// THE MISSING IMAGE FUNCTIONS HAVE BEEN RESTORED
+function drawCoverImage(img, x, y, w, h) {
+  if (!imageReady(img)) return false;
+  const iw = img.naturalWidth, ih = img.naturalHeight;
+  const scale = Math.max(w / iw, h / ih);
+  const sw = w / scale, sh = h / scale;
+  const sx = (iw - sw) / 2, sy = (ih - sh) / 2;
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+  return true;
+}
+
+function drawContainImage(img, x, y, w, h) {
+  if (!imageReady(img)) return false;
+  const iw = img.naturalWidth, ih = img.naturalHeight;
+  const scale = Math.min(w / iw, h / ih);
+  const dw = iw * scale, dh = ih * scale;
+  const dx = x + (w - dw) / 2, dy = y + (h - dh) / 2;
+  ctx.drawImage(img, dx, dy, dw, dh);
+  return true;
+}
+
 function loadAssets() {
   const entries = Object.entries(ASSET_PATHS);
   let loaded = 0;
@@ -144,7 +126,6 @@ function updateLoading(loaded, total) {
   ui.loadingText.textContent = `Forging Assets... ${percent}%`;
 }
 
-// --- WORLD SETUP ---
 function setupWorld() {
   state.tiles = [];
   for (let y = 0; y < ROWS; y++) {
@@ -178,7 +159,6 @@ function setupWorld() {
   }
 }
 
-// --- CORE GAME ACTIONS ---
 function movePlayer(dx, dy) {
   const nx = state.player.x + dx;
   const ny = state.player.y + dy;
@@ -189,33 +169,28 @@ function movePlayer(dx, dy) {
   if (dy < 0) state.player.facing = "up";
 
   if (isBlocked(nx, ny)) {
-    haptic([10, 30, 10]); // Error vibration pattern
+    haptic([10, 30, 10]);
     setMessage("That path is blocked for now.");
     bumpEffect(state.player.x, state.player.y);
     return;
   }
 
-  haptic(10); // Light, crisp physical click for movement
-
+  haptic(10);
   state.player.x = nx;
   state.player.y = ny;
-  
-  // Update motion target for smooth slide
   playerMotion.targetX = nx;
   playerMotion.targetY = ny;
-  
   state.player.stepPulse = 10;
   addDust(nx, ny);
 }
 
 function plantSeed() {
   const x = state.player.x, y = state.player.y, k = key(x, y);
-  
   if (tileAt(x, y) !== "soil") { haptic([10, 30, 10]); setMessage("Stand on soil to plant."); bumpEffect(x, y); return; }
   if (state.weeds[k]) { haptic([10, 30, 10]); setMessage("Clear the weeds first."); bumpEffect(x, y); return; }
   if (state.crops[k]) { haptic([10, 30, 10]); setMessage("Something is already growing here."); bumpEffect(x, y); return; }
 
-  haptic(20); // Satisfying solid click for action
+  haptic(20);
   state.crops[k] = { type: selectedSeed, growth: 0, watered: false, plantedAt: state.day };
   const info = seedInfo[selectedSeed];
   addSparkles(x, y, 18, info.glow);
@@ -227,7 +202,6 @@ function plantSeed() {
 function waterCrop() {
   const k = key(state.player.x, state.player.y);
   const crop = state.crops[k];
-  
   if (!crop) { haptic([10, 30, 10]); setMessage("Nothing here to water."); bumpEffect(state.player.x, state.player.y); return; }
   if (crop.watered) { haptic([10, 30, 10]); setMessage("Already watered today."); return; }
 
@@ -243,11 +217,10 @@ function waterCrop() {
 function harvestCrop() {
   const k = key(state.player.x, state.player.y);
   const crop = state.crops[k];
-  
   if (!crop) { haptic([10, 30, 10]); setMessage("Nothing ready for harvest."); bumpEffect(state.player.x, state.player.y); return; }
   if (crop.growth < 3) { haptic([10, 30, 10]); setMessage("Patience is part of the harvest."); bumpEffect(state.player.x, state.player.y); return; }
 
-  haptic([20, 40, 20]); // Rewarding triple burst
+  haptic([20, 40, 20]);
   const info = seedInfo[crop.type];
   state[info.stat] += 1;
   state.harvest += 1;
@@ -260,10 +233,9 @@ function harvestCrop() {
 
 function clearWeeds() {
   const k = key(state.player.x, state.player.y);
-  
   if (!state.weeds[k]) { haptic([10, 30, 10]); setMessage("No weeds here."); bumpEffect(state.player.x, state.player.y); return; }
   
-  haptic(25); // Heavier click for clearing
+  haptic(25);
   delete state.weeds[k];
   state.kindness += 1;
   addSparkles(state.player.x, state.player.y, 24, "rgba(134,214,133,0.86)");
@@ -275,7 +247,7 @@ function clearWeeds() {
 function pray() {
   if (state.prayedToday) { haptic([10, 30, 10]); setMessage("You already prayed today."); return; }
   
-  haptic([30, 50, 30, 50, 40]); // Heartbeat vibration pattern
+  haptic([30, 50, 30, 50, 40]);
   state.prayedToday = true;
   state.peace += 1;
   Object.values(state.crops).forEach(c => { if (c.watered && c.growth < 3) c.growth += 1; });
@@ -313,8 +285,6 @@ function maybeSpawnWeed() {
   }
 }
 
-// --- RENDERING ENGINE ---
-
 function renderStaticBackground() {
   const sky = bgCtx.createLinearGradient(0, 0, 0, canvas.height);
   sky.addColorStop(0, "#a9d0ef"); sky.addColorStop(0.38, "#e7dfbf");
@@ -327,7 +297,6 @@ function renderStaticBackground() {
   bgCtx.fillStyle = sun;
   bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
 
-  // Clouds
   bgCtx.fillStyle = "rgba(255,255,255,0.14)";
   for (let i = 0; i < 6; i++) {
     const x = 80 + i * 185, y = 180 + (i % 3) * 28;
@@ -338,7 +307,6 @@ function renderStaticBackground() {
     bgCtx.fill();
   }
 
-  // Mountains
   bgCtx.fillStyle = "#40583e";
   bgCtx.beginPath();
   bgCtx.moveTo(0, 520); bgCtx.lineTo(190, 360); bgCtx.lineTo(385, 500); bgCtx.lineTo(585, 350); bgCtx.lineTo(825, 510); bgCtx.lineTo(1080, 382);
@@ -349,7 +317,6 @@ function renderStaticBackground() {
   bgCtx.moveTo(0, 660); bgCtx.lineTo(155, 500); bgCtx.lineTo(350, 650); bgCtx.lineTo(575, 500); bgCtx.lineTo(820, 680); bgCtx.lineTo(1080, 510);
   bgCtx.lineTo(1080, 930); bgCtx.lineTo(0, 930); bgCtx.fill();
 
-  // Meadow
   const meadow = bgCtx.createLinearGradient(0, 920, 0, canvas.height);
   meadow.addColorStop(0, "#899d68"); meadow.addColorStop(1, "#425c3a");
   bgCtx.fillStyle = meadow;
@@ -387,7 +354,6 @@ function drawTile(x, y, type) {
   }
 }
 
-// --- ORIGINAL FALLBACK CROP DRAWING ---
 function drawFallbackCrop(cx, cy, crop, info) {
   ctx.save();
   ctx.translate(cx, cy);
@@ -418,7 +384,6 @@ function drawWaterDrops(cx, cy) {
   ctx.beginPath(); ctx.arc(cx + 25, cy + 17, 5, 0, Math.PI * 2); ctx.arc(cx + 34, cy + 5, 3.5, 0, Math.PI * 2); ctx.fill();
 }
 
-// --- UPDATED PLAYER RENDERING ---
 function drawPlayer() {
   const px = MAP_X + playerMotion.currentX * TILE + TILE / 2;
   const py = MAP_Y + playerMotion.currentY * TILE + TILE / 2;
@@ -434,16 +399,13 @@ function drawPlayer() {
   ctx.restore();
 }
 
-// --- MAIN LOOP ---
 function update(dt) {
   timeTick += dt;
 
-  // Smooth Motion
   playerMotion.currentX += (playerMotion.targetX - playerMotion.currentX) * (playerMotion.lerpSpeed * dt);
   playerMotion.currentY += (playerMotion.targetY - playerMotion.currentY) * (playerMotion.lerpSpeed * dt);
   playerMotion.bob = Math.sin(timeTick / 10) * 2;
 
-  // Particles
   state.particles.forEach(p => {
     p.x += p.vx * dt; p.y += p.vy * dt;
     if (p.y < 180) { p.y = canvas.height - 100; p.x = Math.random() * canvas.width; }
@@ -460,13 +422,11 @@ function update(dt) {
 function draw() {
   ctx.drawImage(bgCanvas, 0, 0);
   
-  // Draw Map
   ctx.fillStyle = "rgba(0,0,0,0.22)"; ctx.fillRect(MAP_X + 12, MAP_Y + 18, MAP_WIDTH, MAP_HEIGHT);
   for (let y = 0; y < ROWS; y++) {
     for (let x = 0; x < COLS; x++) drawTile(x, y, tileAt(x, y));
   }
 
-  // Draw Entities
   Object.entries(state.crops).forEach(([pos, crop]) => {
     const [x, y] = pos.split(",").map(Number);
     const center = centerOfTile(x, y);
@@ -490,7 +450,6 @@ function draw() {
 
   drawPlayer();
   
-  // UI Badges & Particles
   state.particles.forEach(p => {
     ctx.fillStyle = `rgba(255,232,162,${p.a})`;
     ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
@@ -510,15 +469,20 @@ function mainLoop(ts) {
   requestAnimationFrame(mainLoop);
 }
 
-// --- BOOTSTRAP ---
 async function init() {
   enableRoundRectFallback();
   state = loadGame() || defaultState();
-  setupWorld();
+  
+  // Only setup default world if the save is completely empty
+  if (!state.tiles || state.tiles.length === 0) {
+      setupWorld();
+  }
+  
   renderStaticBackground();
   bindEvents();
   await loadAssets();
   ui.loadingScreen.classList.add("hidden");
+  updateUI();
   requestAnimationFrame(mainLoop);
 }
 
@@ -529,30 +493,20 @@ function updateUI() {
 }
 
 function bindEvents() {
-    document.getElementById("startBtn").onclick = () => { 
-        haptic(30); 
-        ui.titleScreen.classList.add("hidden"); 
-    };
-    
-    document.getElementById("continueBtn").onclick = () => { 
-        haptic(30); 
-        ui.titleScreen.classList.add("hidden"); 
-    };
+    document.getElementById("startBtn").onclick = () => { haptic(30); ui.titleScreen.classList.add("hidden"); };
+    document.getElementById("continueBtn").onclick = () => { haptic(30); ui.titleScreen.classList.add("hidden"); };
 
-    // Control Buttons
     document.getElementById("upBtn").onclick = () => movePlayer(0, -1);
     document.getElementById("downBtn").onclick = () => movePlayer(0, 1);
     document.getElementById("leftBtn").onclick = () => movePlayer(-1, 0);
     document.getElementById("rightBtn").onclick = () => movePlayer(1, 0);
 
-    // Action Buttons
     document.getElementById("plantBtn").onclick = plantSeed;
     document.getElementById("waterBtn").onclick = waterCrop;
     document.getElementById("harvestBtn").onclick = harvestCrop;
     document.getElementById("clearBtn").onclick = clearWeeds;
     document.getElementById("prayBtn").onclick = pray;
 
-    // Seed Selection
     document.querySelectorAll(".seed-option").forEach(button => {
         button.addEventListener("click", () => {
           haptic(10);
@@ -564,7 +518,6 @@ function bindEvents() {
         });
     });
 
-    // Save Button
     document.getElementById("saveBtn").onclick = () => { haptic(20); saveGame(false); };
     
     document.addEventListener("keydown", e => {
@@ -611,5 +564,4 @@ function enableRoundRectFallback() {
   };
 }
 
-// Start Game
 init();
