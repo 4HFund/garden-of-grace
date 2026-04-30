@@ -804,6 +804,16 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     return this;
   };
 }
+ const mobilePlantBtn = document.getElementById("mobilePlantBtn");
+const mobileWaterBtn = document.getElementById("mobileWaterBtn");
+const mobileHarvestBtn = document.getElementById("mobileHarvestBtn");
+const mobileClearBtn = document.getElementById("mobileClearBtn");
+const mobilePrayBtn = document.getElementById("mobilePrayBtn");
 
+if (mobilePlantBtn) mobilePlantBtn.addEventListener("click", plantSeed);
+if (mobileWaterBtn) mobileWaterBtn.addEventListener("click", waterCrop);
+if (mobileHarvestBtn) mobileHarvestBtn.addEventListener("click", harvestCrop);
+if (mobileClearBtn) mobileClearBtn.addEventListener("click", clearWeeds);
+if (mobilePrayBtn) mobilePrayBtn.addEventListener("click", pray);
 loadGame();
 gameLoop();
