@@ -20,7 +20,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const MAP_WIDTH = COLS * TILE;
   const MAP_HEIGHT = ROWS * TILE;
   const MAP_X = Math.round((canvas.width - MAP_WIDTH) / 2);
-  const MAP_Y = 560;
+  const MAP_Y = 440;
 
   const STORAGE_KEY = "gardenOfGracePremiumV3";
 
