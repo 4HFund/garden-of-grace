@@ -4,18 +4,11 @@
 
 :root {
   --bg-deep: #07111d;
-  --bg-mid: #0c1b2a;
-  --panel: rgba(10, 20, 30, 0.72);
-  --panel-strong: rgba(9, 16, 24, 0.88);
   --stroke: rgba(255, 244, 220, 0.14);
   --cream: #f6efdf;
   --muted: #b9c6cf;
   --gold: #e5bf72;
-  --gold-strong: #e09a33;
-  --blue: #77c9f2;
   --green: #7ecf84;
-  --purple: #bb97ff;
-  --danger: #d86f60;
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
   --inner-glow: inset 0 1px 0 rgba(255,255,255,0.08);
 }
@@ -49,100 +42,87 @@ button:active {
 }
 
 #gameApp {
-  min-height: 100svh;
+  height: 100svh;
   display: flex;
   flex-direction: column;
   padding:
-    calc(10px + env(safe-area-inset-top))
+    calc(8px + env(safe-area-inset-top))
     10px
-    calc(88px + env(safe-area-inset-bottom))
+    calc(82px + env(safe-area-inset-bottom))
     10px;
-  gap: 10px;
+  gap: 8px;
   position: relative;
+  overflow: hidden;
 }
 
 .glassCard {
   background:
     linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02)),
-    rgba(10, 20, 30, 0.62);
+    rgba(10, 20, 30, 0.58);
   border: 1px solid var(--stroke);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   box-shadow: var(--shadow), var(--inner-glow);
 }
 
+/* TOP BAR */
+
 .topBar {
-  height: 86px;
-  border-radius: 26px;
+  height: 76px;
+  border-radius: 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  padding: 12px 14px;
   background:
-    radial-gradient(circle at right center, rgba(224, 154, 51, 0.22), transparent 24%),
+    radial-gradient(circle at right center, rgba(224, 154, 51, 0.24), transparent 28%),
     linear-gradient(180deg, rgba(10,20,30,0.84), rgba(8,14,22,0.9));
   border: 1px solid var(--stroke);
   box-shadow: var(--shadow);
   position: relative;
   overflow: hidden;
-}
-
-.topBar::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(90deg, rgba(255,255,255,0.03), transparent 30%, transparent 70%, rgba(255,255,255,0.03));
-  pointer-events: none;
-}
-
-.brandBlock {
-  position: relative;
-  z-index: 2;
+  flex-shrink: 0;
 }
 
 .kicker {
-  font-size: 0.62rem;
-  font-weight: 700;
+  font-size: 0.56rem;
+  font-weight: 800;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: rgba(255, 244, 220, 0.7);
+  color: rgba(255, 244, 220, 0.72);
   margin-bottom: 2px;
 }
 
 .topBar h1 {
   margin: 0;
-  font-size: 1.95rem;
+  font-size: 1.55rem;
   font-weight: 900;
   letter-spacing: -1px;
   line-height: 1;
 }
 
 .topBar p {
-  margin: 5px 0 0;
+  margin: 4px 0 0;
   color: var(--gold);
   font-weight: 800;
-  letter-spacing: 4px;
+  letter-spacing: 3px;
   text-transform: uppercase;
-  font-size: 0.86rem;
-}
-
-.topActions {
-  position: relative;
-  z-index: 2;
+  font-size: 0.68rem;
 }
 
 .topBtn {
-  min-width: 96px;
-  height: 54px;
-  border-radius: 20px;
-  padding: 0 20px;
-  font-size: 1rem;
-  font-weight: 800;
+  min-width: 78px;
+  height: 48px;
+  border-radius: 18px;
+  padding: 0 16px;
+  font-size: 0.92rem;
+  font-weight: 900;
   color: #fff;
   background: linear-gradient(135deg, #d8811f, #f0b257);
   box-shadow: 0 10px 28px rgba(224, 154, 51, 0.28);
 }
+
+/* GAME AREA */
 
 .stageWrap {
   flex: 1;
@@ -152,7 +132,7 @@ button:active {
 .playStage {
   position: relative;
   height: 100%;
-  border-radius: 30px;
+  border-radius: 28px;
   overflow: hidden;
   background: #122517;
   border: 1px solid rgba(255,244,220,0.12);
@@ -180,82 +160,97 @@ button:active {
   pointer-events: auto;
 }
 
+/* COMPACT HUD */
+
 .questCard {
   position: absolute;
-  top: 16px;
-  left: 16px;
-  width: min(48%, 310px);
-  border-radius: 22px;
-  padding: 14px 16px;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  border-radius: 18px;
+  padding: 10px 12px;
+  min-height: 56px;
 }
 
 .cardLabel {
-  font-size: 0.72rem;
+  font-size: 0.58rem;
   text-transform: uppercase;
   letter-spacing: 2px;
-  color: rgba(255,244,220,0.68);
-  margin-bottom: 8px;
-  font-weight: 700;
+  color: rgba(255,244,220,0.62);
+  margin-bottom: 4px;
+  font-weight: 800;
 }
 
 .questText {
-  font-size: 0.95rem;
-  line-height: 1.38;
-  font-weight: 600;
+  font-size: 0.8rem;
+  line-height: 1.25;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
+/* STATS NOW SMALL CHIPS */
 
 .statsCluster {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 76px;
+  left: 10px;
+  right: 10px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  width: min(46%, 250px);
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
 }
 
 .statChip {
-  border-radius: 18px;
-  padding: 11px 12px;
-  min-height: 74px;
+  border-radius: 15px;
+  padding: 7px 8px;
+  min-height: 48px;
 }
 
 .statChip span {
   display: block;
-  color: rgba(255,244,220,0.72);
-  font-size: 0.7rem;
+  color: rgba(255,244,220,0.68);
+  font-size: 0.52rem;
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-bottom: 6px;
+  margin-bottom: 3px;
 }
 
 .statChip strong {
-  font-size: 1.55rem;
+  font-size: 1.08rem;
   line-height: 1;
   font-weight: 900;
 }
 
+/* SEEDS MOVED SMALLER */
+
 .seedTray {
   position: absolute;
-  top: 122px;
-  right: 16px;
-  width: min(46%, 250px);
-  border-radius: 22px;
-  padding: 12px;
+  left: 10px;
+  right: 10px;
+  bottom: 154px;
+  border-radius: 18px;
+  padding: 8px;
+}
+
+.seedTray .cardLabel {
+  display: none;
 }
 
 .seedButtons {
   display: grid;
-  gap: 8px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
 }
 
 .seedBtn {
-  min-height: 44px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, rgba(34, 52, 69, 0.98), rgba(42, 68, 92, 0.98));
+  min-height: 40px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(34, 52, 69, 0.96), rgba(42, 68, 92, 0.96));
   color: var(--cream);
-  font-size: 0.92rem;
-  font-weight: 800;
+  font-size: 0.78rem;
+  font-weight: 900;
   border: 1px solid rgba(255,244,220,0.10);
 }
 
@@ -265,48 +260,57 @@ button:active {
   box-shadow: 0 10px 30px rgba(126, 207, 132, 0.24);
 }
 
+/* FLOATING MOVEMENT CONTROLS */
+
 .mobileControls {
   position: absolute;
-  left: 16px;
-  bottom: 94px;
+  left: 12px;
+  bottom: 222px;
   display: grid;
   justify-items: center;
-  gap: 6px;
-  border-radius: 24px;
-  padding: 10px;
+  gap: 5px;
+  border-radius: 20px;
+  padding: 7px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)),
+    rgba(10, 20, 30, 0.54);
 }
 
 .mobileControls div {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .mobileControls button {
-  width: 64px;
-  height: 54px;
-  border-radius: 18px;
+  width: 48px;
+  height: 42px;
+  border-radius: 15px;
   color: white;
-  font-size: 1.05rem;
+  font-size: 0.9rem;
   background: linear-gradient(135deg, rgba(41, 63, 84, 0.94), rgba(61, 89, 112, 0.94));
   border: 1px solid rgba(255,244,220,0.12);
   box-shadow: 0 10px 26px rgba(0,0,0,0.24);
 }
 
+/* MESSAGE */
+
 .messageBox {
   position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: 14px;
-  min-height: 58px;
-  border-radius: 20px;
-  padding: 14px 16px;
-  font-size: 0.96rem;
-  font-weight: 600;
-  line-height: 1.35;
+  left: 10px;
+  right: 10px;
+  bottom: 92px;
+  min-height: 50px;
+  border-radius: 18px;
+  padding: 12px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ACTION BAR */
 
 .actionBar {
   position: fixed;
@@ -316,9 +320,9 @@ button:active {
   z-index: 30;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  padding: 10px;
-  border-radius: 24px;
+  gap: 7px;
+  padding: 8px;
+  border-radius: 22px;
   background:
     linear-gradient(180deg, rgba(16,24,32,0.94), rgba(8,14,22,0.98));
   border: 1px solid rgba(255,244,220,0.12);
@@ -328,10 +332,10 @@ button:active {
 }
 
 .actionBar button {
-  min-height: 56px;
-  border-radius: 18px;
-  font-size: 0.94rem;
-  font-weight: 800;
+  min-height: 52px;
+  border-radius: 17px;
+  font-size: 0.82rem;
+  font-weight: 900;
   color: white;
   background: linear-gradient(135deg, #22384c, #31526e);
   border: 1px solid rgba(255,244,220,0.10);
@@ -340,6 +344,8 @@ button:active {
 #prayBtn {
   background: linear-gradient(135deg, #8f68da, #c9a8ff);
 }
+
+/* TITLE SCREEN */
 
 .titleScreen {
   position: fixed;
@@ -433,6 +439,8 @@ button:active {
   border: 1px solid rgba(255,244,220,0.10);
 }
 
+/* HELP MODAL */
+
 .helpModal {
   position: fixed;
   inset: 0;
@@ -465,67 +473,27 @@ button:active {
   line-height: 1.6;
 }
 
-@media (max-width: 420px) {
-  .topBar {
-    height: 82px;
-    padding: 12px 14px;
-  }
-
+@media (max-width: 380px) {
   .topBar h1 {
-    font-size: 1.7rem;
+    font-size: 1.35rem;
   }
 
   .topBar p {
-    font-size: 0.78rem;
-    letter-spacing: 3px;
+    font-size: 0.62rem;
   }
 
   .topBtn {
-    min-width: 84px;
-    height: 50px;
-    border-radius: 18px;
-  }
-
-  .questCard {
-    width: calc(100% - 32px);
-    top: 12px;
-    left: 12px;
-    right: 12px;
-  }
-
-  .statsCluster {
-    top: 104px;
-    left: 12px;
-    right: 12px;
-    width: auto;
-  }
-
-  .seedTray {
-    top: 272px;
-    left: 12px;
-    right: 12px;
-    width: auto;
-  }
-
-  .mobileControls {
-    left: 12px;
-    bottom: 86px;
+    min-width: 72px;
+    height: 44px;
+    font-size: 0.82rem;
   }
 
   .mobileControls button {
-    width: 58px;
-    height: 50px;
-  }
-
-  .messageBox {
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-    font-size: 0.9rem;
+    width: 44px;
+    height: 39px;
   }
 
   .actionBar button {
-    min-height: 54px;
-    font-size: 0.82rem;
+    font-size: 0.72rem;
   }
 }
