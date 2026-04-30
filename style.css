@@ -182,7 +182,6 @@ function movePlayer(dx, dy) {
   addDust(nx, ny);
 }
 
-// RESTORED TAP TO MOVE LOGIC
 function handleCanvasTap(event) {
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;
@@ -542,7 +541,6 @@ function bindEvents() {
 
     document.getElementById("saveBtn").onclick = () => { haptic(20); saveGame(false); };
     
-    // BIND TAP TO MOVE EVENT
     canvas.addEventListener("click", handleCanvasTap);
     
     document.addEventListener("keydown", e => {
