@@ -9,7 +9,7 @@ const MAP_HEIGHT = ROWS * TILE;
 const MAP_X = Math.round((canvas.width - MAP_WIDTH) / 2);
 const MAP_Y = 420;
 
-const STORAGE_KEY = "gardenOfGraceCinematicBuildV1";
+const STORAGE_KEY = "gardenOfGraceAssetBuildV1";
 
 const seedInfo = {
   faith: {
@@ -38,10 +38,59 @@ const seedInfo = {
   }
 };
 
+const ASSET_PATHS = {
+  grass: "assets/grass.png",
+  soil: "assets/soil.png",
+  weed: "assets/weed.png",
+  faithCrop: "assets/faith-crop.png",
+  player: "assets/player.png"
+};
+
+const gameImages = {};
+
+Object.entries(ASSET_PATHS).forEach(([name, src]) => {
+  const img = new Image();
+  img.src = src;
+  gameImages[name] = img;
+});
+
+function imageReady(img) {
+  return img && img.complete && img.naturalWidth > 0;
+}
+
+function drawCoverImage(img, x, y, w, h) {
+  if (!imageReady(img)) return false;
+
+  const iw = img.naturalWidth;
+  const ih = img.naturalHeight;
+  const scale = Math.max(w / iw, h / ih);
+  const sw = w / scale;
+  const sh = h / scale;
+  const sx = (iw - sw) / 2;
+  const sy = (ih - sh) / 2;
+
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+  return true;
+}
+
+function drawContainImage(img, x, y, w, h) {
+  if (!imageReady(img)) return false;
+
+  const iw = img.naturalWidth;
+  const ih = img.naturalHeight;
+  const scale = Math.min(w / iw, h / ih);
+  const dw = iw * scale;
+  const dh = ih * scale;
+  const dx = x + (w - dw) / 2;
+  const dy = y + (h - dh) / 2;
+
+  ctx.drawImage(img, dx, dy, dw, dh);
+  return true;
+}
+
 let selectedSeed = "faith";
 let messageTimer = 0;
 let timeTick = 0;
-
 let state = null;
 
 const ui = {
@@ -109,6 +158,7 @@ function setupWorld() {
 
   for (let y = 0; y < ROWS; y++) {
     const row = [];
+
     for (let x = 0; x < COLS; x++) {
       let type = "grass";
 
@@ -124,11 +174,21 @@ function setupWorld() {
 
       row.push(type);
     }
+
     state.tiles.push(row);
   }
 
   const starterWeeds = [
-    [1, 2], [3, 2], [4, 2], [6, 2], [6, 3], [3, 5], [4, 5], [6, 5], [8, 5], [5, 1]
+    [1, 2],
+    [3, 2],
+    [4, 2],
+    [6, 2],
+    [6, 3],
+    [3, 5],
+    [4, 5],
+    [6, 5],
+    [8, 5],
+    [5, 1]
   ];
 
   state.weeds = {};
@@ -214,7 +274,11 @@ function loadGameFromStorage() {
   try {
     const parsed = JSON.parse(raw);
     state = { ...defaultState(), ...parsed };
-    if (!state.tiles || !state.tiles.length) setupWorld();
+
+    if (!state.tiles || !state.tiles.length) {
+      setupWorld();
+    }
+
     setMessage("Welcome back. Your field remembered you.");
     updateUI();
     return true;
@@ -358,7 +422,9 @@ function pray() {
   state.peace += 1;
 
   Object.values(state.crops).forEach(crop => {
-    if (crop.watered && crop.growth < 3) crop.growth += 1;
+    if (crop.watered && crop.growth < 3) {
+      crop.growth += 1;
+    }
   });
 
   addSparkles(state.player.x, state.player.y, 28, "rgba(255,244,220,0.96)");
@@ -372,7 +438,9 @@ function newDay() {
   state.prayedToday = false;
 
   Object.values(state.crops).forEach(crop => {
-    if (crop.watered && crop.growth < 3) crop.growth += 1;
+    if (crop.watered && crop.growth < 3) {
+      crop.growth += 1;
+    }
     crop.watered = false;
   });
 
@@ -383,6 +451,7 @@ function newDay() {
       for (let x = 1; x < COLS - 1; x++) {
         const k = key(x, y);
         const t = tileAt(x, y);
+
         if (t !== "water" && t !== "fence" && !state.weeds[k] && !state.crops[k]) {
           possible.push([x, y]);
         }
@@ -471,46 +540,48 @@ function drawTile(x, y, type) {
   const py = MAP_Y + y * TILE;
 
   if (type === "grass") {
-    ctx.fillStyle = (x + y) % 2 === 0 ? "#4d8c4f" : "#428049";
-    ctx.fillRect(px, py, TILE, TILE);
+    const usedImage = drawCoverImage(gameImages.grass, px, py, TILE, TILE);
 
-    ctx.fillStyle = "rgba(255,255,255,0.05)";
-    if ((x + y) % 3 === 0) {
-      ctx.fillRect(px + 16, py + 18, 3, 18);
-      ctx.fillRect(px + 43, py + 36, 3, 14);
-      ctx.fillRect(px + 60, py + 24, 2, 16);
+    if (!usedImage) {
+      ctx.fillStyle = (x + y) % 2 === 0 ? "#4d8c4f" : "#428049";
+      ctx.fillRect(px, py, TILE, TILE);
     }
+
+    ctx.fillStyle = "rgba(0,0,0,0.10)";
+    ctx.fillRect(px, py + TILE - 10, TILE, 10);
   }
 
   if (type === "soil") {
-    ctx.fillStyle = "#9c6a34";
-    ctx.fillRect(px, py, TILE, TILE);
+    const usedImage = drawCoverImage(gameImages.soil, px, py, TILE, TILE);
 
-    ctx.fillStyle = "rgba(80,40,16,0.28)";
-    for (let i = 0; i < 4; i++) {
-      ctx.fillRect(px + 12, py + 14 + i * 16, TILE - 24, 2);
+    if (!usedImage) {
+      ctx.fillStyle = "#9c6a34";
+      ctx.fillRect(px, py, TILE, TILE);
     }
 
-    ctx.fillStyle = "rgba(0,0,0,0.08)";
-    ctx.fillRect(px, py + TILE - 8, TILE, 8);
+    ctx.fillStyle = "rgba(0,0,0,0.12)";
+    ctx.fillRect(px, py + TILE - 10, TILE, 10);
   }
 
   if (type === "water") {
-    ctx.fillStyle = "#59b0dc";
+    const gradient = ctx.createLinearGradient(px, py, px, py + TILE);
+    gradient.addColorStop(0, "#6bc8ef");
+    gradient.addColorStop(1, "#328fbd");
+    ctx.fillStyle = gradient;
     ctx.fillRect(px, py, TILE, TILE);
 
-    ctx.strokeStyle = "rgba(255,255,255,0.18)";
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(px + 10, py + 24);
-    ctx.quadraticCurveTo(px + 24, py + 16, px + 38, py + 24);
-    ctx.quadraticCurveTo(px + 52, py + 32, px + 68, py + 22);
+    ctx.quadraticCurveTo(px + 24, py + 12, px + 40, py + 24);
+    ctx.quadraticCurveTo(px + 54, py + 36, px + 72, py + 22);
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo(px + 14, py + 52);
-    ctx.quadraticCurveTo(px + 30, py + 42, px + 46, py + 52);
-    ctx.quadraticCurveTo(px + 58, py + 59, px + 72, py + 50);
+    ctx.moveTo(px + 12, py + 56);
+    ctx.quadraticCurveTo(px + 28, py + 44, px + 44, py + 56);
+    ctx.quadraticCurveTo(px + 60, py + 68, px + 74, py + 52);
     ctx.stroke();
   }
 
@@ -519,20 +590,29 @@ function drawTile(x, y, type) {
     ctx.fillRect(px, py, TILE, TILE);
 
     ctx.fillStyle = "rgba(255,244,220,0.12)";
-    ctx.fillRect(px + 10, py + 18, 10, 8);
-    ctx.fillRect(px + 34, py + 42, 12, 8);
-    ctx.fillRect(px + 56, py + 22, 9, 9);
+    ctx.fillRect(px + 10, py + 18, 12, 9);
+    ctx.fillRect(px + 35, py + 42, 14, 9);
+    ctx.fillRect(px + 58, py + 22, 10, 10);
+
+    ctx.fillStyle = "rgba(0,0,0,0.08)";
+    ctx.fillRect(px, py + TILE - 8, TILE, 8);
   }
 
   if (type === "fence") {
-    ctx.fillStyle = "#30573b";
+    drawCoverImage(gameImages.grass, px, py, TILE, TILE);
+
+    ctx.fillStyle = "rgba(20,45,28,0.55)";
     ctx.fillRect(px, py, TILE, TILE);
 
     ctx.fillStyle = "#8a5b31";
-    ctx.fillRect(px + 16, py + 8, 10, TILE - 16);
-    ctx.fillRect(px + 58, py + 8, 10, TILE - 16);
-    ctx.fillRect(px + 8, py + 24, TILE - 16, 9);
-    ctx.fillRect(px + 8, py + 50, TILE - 16, 9);
+    ctx.fillRect(px + 16, py + 8, 11, TILE - 16);
+    ctx.fillRect(px + 57, py + 8, 11, TILE - 16);
+    ctx.fillRect(px + 8, py + 24, TILE - 16, 10);
+    ctx.fillRect(px + 8, py + 50, TILE - 16, 10);
+
+    ctx.fillStyle = "rgba(255,244,220,0.10)";
+    ctx.fillRect(px + 16, py + 8, 4, TILE - 16);
+    ctx.fillRect(px + 8, py + 24, TILE - 16, 3);
   }
 
   ctx.strokeStyle = "rgba(0,0,0,0.08)";
@@ -548,27 +628,40 @@ function drawWeed(x, y) {
   const pos = centerOfTile(x, y);
 
   ctx.save();
-  ctx.translate(pos.x, pos.y);
 
-  ctx.fillStyle = "rgba(0,0,0,0.16)";
+  ctx.fillStyle = "rgba(0,0,0,0.28)";
   ctx.beginPath();
-  ctx.ellipse(0, 22, 18, 7, 0, 0, Math.PI * 2);
+  ctx.ellipse(pos.x, pos.y + 28, 26, 10, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.strokeStyle = "#263919";
-  ctx.lineWidth = 5;
-  for (let i = -2; i <= 2; i++) {
+  const size = TILE * 0.92;
+  const usedImage = drawContainImage(
+    gameImages.weed,
+    pos.x - size / 2,
+    pos.y - size / 2,
+    size,
+    size
+  );
+
+  if (!usedImage) {
+    ctx.translate(pos.x, pos.y);
+
+    ctx.strokeStyle = "#263919";
+    ctx.lineWidth = 5;
+
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * 5, 18);
+      ctx.quadraticCurveTo(i * 8, 0, i * 11, -16);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = "#5c7431";
     ctx.beginPath();
-    ctx.moveTo(i * 5, 18);
-    ctx.quadraticCurveTo(i * 8, 0, i * 11, -16);
-    ctx.stroke();
+    ctx.ellipse(-10, -7, 9, 4, -0.6, 0, Math.PI * 2);
+    ctx.ellipse(10, -10, 9, 4, 0.6, 0, Math.PI * 2);
+    ctx.fill();
   }
-
-  ctx.fillStyle = "#5c7431";
-  ctx.beginPath();
-  ctx.ellipse(-10, -7, 9, 4, -0.6, 0, Math.PI * 2);
-  ctx.ellipse(10, -10, 9, 4, 0.6, 0, Math.PI * 2);
-  ctx.fill();
 
   ctx.restore();
 }
@@ -578,12 +671,42 @@ function drawCrop(x, y, crop) {
   const info = seedInfo[crop.type];
 
   ctx.save();
-  ctx.translate(pos.x, pos.y);
 
-  ctx.fillStyle = "rgba(0,0,0,0.16)";
+  ctx.fillStyle = "rgba(0,0,0,0.20)";
   ctx.beginPath();
-  ctx.ellipse(0, 22, 18, 7, 0, 0, Math.PI * 2);
+  ctx.ellipse(pos.x, pos.y + 28, 26, 10, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  if (crop.growth >= 3 && crop.type === "faith") {
+    ctx.shadowColor = info.glow;
+    ctx.shadowBlur = 24;
+
+    const size = TILE * 1.02;
+    const usedImage = drawContainImage(
+      gameImages.faithCrop,
+      pos.x - size / 2,
+      pos.y - size / 2,
+      size,
+      size
+    );
+
+    ctx.shadowBlur = 0;
+
+    if (usedImage) {
+      if (crop.watered) {
+        ctx.fillStyle = "rgba(121,199,239,0.8)";
+        ctx.beginPath();
+        ctx.arc(pos.x + 26, pos.y + 18, 5, 0, Math.PI * 2);
+        ctx.arc(pos.x + 34, pos.y + 8, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+      return;
+    }
+  }
+
+  ctx.translate(pos.x, pos.y);
 
   ctx.strokeStyle = "#2e7a38";
   ctx.lineWidth = 5;
@@ -644,6 +767,7 @@ function drawCrop(x, y, crop) {
     ctx.fill();
 
     ctx.fillStyle = info.color;
+
     for (let i = 0; i < 6; i++) {
       const angle = (Math.PI * 2 / 6) * i;
       const px = Math.cos(angle) * 10;
@@ -659,8 +783,9 @@ function drawCrop(x, y, crop) {
     ctx.fill();
   }
 
+  ctx.shadowBlur = 0;
+
   if (crop.watered) {
-    ctx.shadowBlur = 0;
     ctx.fillStyle = "rgba(121,199,239,0.8)";
     ctx.beginPath();
     ctx.arc(17, 10, 4, 0, Math.PI * 2);
@@ -676,48 +801,62 @@ function drawPlayer() {
   const bob = Math.sin(timeTick / 10) * 2;
 
   ctx.save();
-  ctx.translate(pos.x, pos.y + bob);
 
-  ctx.fillStyle = "rgba(0,0,0,0.22)";
+  ctx.fillStyle = "rgba(0,0,0,0.28)";
   ctx.beginPath();
-  ctx.ellipse(0, 28, 20, 8, 0, 0, Math.PI * 2);
+  ctx.ellipse(pos.x, pos.y + 34, 24, 10, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#2f5b7d";
-  ctx.beginPath();
-  ctx.roundRect(-16, -2, 32, 38, 10);
-  ctx.fill();
+  const playerHeight = TILE * 1.28;
+  const playerWidth = TILE * 0.92;
 
-  ctx.fillStyle = "#f2c79e";
-  ctx.beginPath();
-  ctx.arc(0, -18, 16, 0, Math.PI * 2);
-  ctx.fill();
+  const usedImage = drawContainImage(
+    gameImages.player,
+    pos.x - playerWidth / 2,
+    pos.y - playerHeight / 2 + bob,
+    playerWidth,
+    playerHeight
+  );
 
-  ctx.fillStyle = "#5b3524";
-  ctx.beginPath();
-  ctx.arc(0, -24, 16, Math.PI, Math.PI * 2);
-  ctx.fill();
+  if (!usedImage) {
+    ctx.translate(pos.x, pos.y + bob);
 
-  ctx.fillStyle = "#1c2530";
-  ctx.beginPath();
-  ctx.arc(-6, -18, 2.3, 0, Math.PI * 2);
-  ctx.arc(6, -18, 2.3, 0, Math.PI * 2);
-  ctx.fill();
+    ctx.fillStyle = "#2f5b7d";
+    ctx.beginPath();
+    ctx.roundRect(-16, -2, 32, 38, 10);
+    ctx.fill();
 
-  ctx.strokeStyle = "#1c2530";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(0, -12, 6, 0, Math.PI);
-  ctx.stroke();
+    ctx.fillStyle = "#f2c79e";
+    ctx.beginPath();
+    ctx.arc(0, -18, 16, 0, Math.PI * 2);
+    ctx.fill();
 
-  ctx.fillStyle = "#e5bf72";
-  ctx.beginPath();
-  ctx.moveTo(0, 6);
-  ctx.lineTo(7, 18);
-  ctx.lineTo(0, 30);
-  ctx.lineTo(-7, 18);
-  ctx.closePath();
-  ctx.fill();
+    ctx.fillStyle = "#5b3524";
+    ctx.beginPath();
+    ctx.arc(0, -24, 16, Math.PI, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#1c2530";
+    ctx.beginPath();
+    ctx.arc(-6, -18, 2.3, 0, Math.PI * 2);
+    ctx.arc(6, -18, 2.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "#1c2530";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, -12, 6, 0, Math.PI);
+    ctx.stroke();
+
+    ctx.fillStyle = "#e5bf72";
+    ctx.beginPath();
+    ctx.moveTo(0, 6);
+    ctx.lineTo(7, 18);
+    ctx.lineTo(0, 30);
+    ctx.lineTo(-7, 18);
+    ctx.closePath();
+    ctx.fill();
+  }
 
   ctx.restore();
 }
@@ -749,8 +888,10 @@ function drawVignette() {
     canvas.height / 2,
     950
   );
+
   vignette.addColorStop(0, "rgba(0,0,0,0)");
   vignette.addColorStop(1, "rgba(0,0,0,0.28)");
+
   ctx.fillStyle = vignette;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -814,7 +955,9 @@ function updateParticles() {
     return s.life > 0;
   });
 
-  if (state.screenFlash > 0) state.screenFlash -= 1;
+  if (state.screenFlash > 0) {
+    state.screenFlash -= 1;
+  }
 }
 
 function gameLoop() {
@@ -881,6 +1024,7 @@ function bindEvents() {
       newGame();
       setMessage("No saved journey found, so a new one has begun.");
     }
+
     ui.titleScreen.classList.add("hidden");
   });
 
@@ -906,10 +1050,12 @@ function bindEvents() {
       selectedSeed = "faith";
       updateUI();
     }
+
     if (k === "2") {
       selectedSeed = "peace";
       updateUI();
     }
+
     if (k === "3") {
       selectedSeed = "kindness";
       updateUI();
@@ -932,6 +1078,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
   CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
     if (w < 2 * r) r = w / 2;
     if (h < 2 * r) r = h / 2;
+
     this.beginPath();
     this.moveTo(x + r, y);
     this.arcTo(x + w, y, x + w, y + h, r);
@@ -939,6 +1086,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     this.arcTo(x, y + h, x, y, r);
     this.arcTo(x, y, x + w, y, r);
     this.closePath();
+
     return this;
   };
 }
