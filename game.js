@@ -1,11 +1,11 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-const TILE = 48;
+const TILE = 60;
 const COLS = 14;
 const ROWS = 9;
-const MAP_X = 36;
-const MAP_Y = 86;
+const MAP_X = 60;
+const MAP_Y = 72;
 
 const COLORS = {
   grass1: "#3e8f4f",
