@@ -19,9 +19,7 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100%;
-  background:
-    radial-gradient(circle at top left, rgba(217, 108, 6, 0.18), transparent 35%),
-    linear-gradient(135deg, #0c1118, #172636 55%, #101820);
+  background: #101820;
   font-family: Arial, Helvetica, sans-serif;
   color: var(--cream);
   overflow-x: hidden;
@@ -33,7 +31,7 @@ button {
   cursor: pointer;
   border-radius: 14px;
   font-weight: 800;
-  transition: transform 0.08s ease, filter 0.08s ease;
+  transition: transform 0.08s ease;
 }
 
 button:active {
@@ -44,13 +42,14 @@ button:active {
   width: min(1280px, 100%);
   margin: 0 auto;
   padding: calc(12px + env(safe-area-inset-top)) 12px 12px;
+  padding-bottom: calc(84px + env(safe-area-inset-bottom));
 }
 
 .topBar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(16, 24, 32, 0.78);
+  background: rgba(16, 24, 32, 0.86);
   border: 1px solid rgba(255, 244, 220, 0.12);
   border-radius: 22px;
   padding: 14px 18px;
@@ -123,7 +122,6 @@ button:active {
 
 .sidePanel h3 {
   margin-top: 18px;
-  color: white;
 }
 
 #questText {
@@ -177,7 +175,6 @@ button:active {
 .seedBtn.active {
   background: linear-gradient(135deg, #2c7d4f, #74c476);
   color: white;
-  box-shadow: 0 8px 25px rgba(120, 199, 121, 0.28);
 }
 
 .actionButtons {
@@ -204,6 +201,10 @@ button:active {
   display: none;
 }
 
+.bottomActionBar {
+  display: none;
+}
+
 #messageBox {
   margin-top: 12px;
   background: rgba(255, 244, 220, 0.08);
@@ -216,29 +217,33 @@ button:active {
   box-shadow: 0 12px 45px rgba(0, 0, 0, 0.22);
 }
 
-/* MOBILE GAME LAYOUT */
+/* MOBILE */
 @media (max-width: 920px) {
   html,
   body {
-    background: #101820;
+    height: 100%;
+    overflow: hidden;
   }
 
   #gameShell {
-    padding: calc(10px + env(safe-area-inset-top)) 8px 10px;
+    height: 100vh;
+    padding: calc(10px + env(safe-area-inset-top)) 8px calc(82px + env(safe-area-inset-bottom));
+    overflow: hidden;
   }
 
   .topBar {
     padding: 10px 12px;
     margin-bottom: 8px;
     border-radius: 18px;
+    height: 76px;
   }
 
   .topBar h1 {
-    font-size: 1.35rem;
+    font-size: 1.28rem;
   }
 
   .topBar p {
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     letter-spacing: 2px;
   }
 
@@ -248,39 +253,37 @@ button:active {
   }
 
   .gameWrap {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    display: block;
+    height: calc(100vh - 176px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
 
   .playArea {
-    order: 1;
+    height: 100%;
     position: relative;
   }
 
   .sidePanel {
-    order: 2;
     display: none;
   }
 
   #gameCanvas {
     width: 100%;
-    height: 60vh;
-    min-height: 520px;
-    max-height: 620px;
+    height: calc(100% - 58px);
+    min-height: 0;
+    max-height: none;
     border-radius: 20px;
   }
 
   .mobileControls {
     display: grid;
     position: absolute;
-    left: 14px;
-    bottom: 74px;
-    z-index: 5;
+    left: 12px;
+    bottom: 76px;
+    z-index: 10;
     justify-content: center;
     justify-items: center;
     gap: 5px;
-    padding: 8px;
+    padding: 7px;
     background: rgba(10, 16, 22, 0.45);
     border: 1px solid rgba(255, 244, 220, 0.18);
     border-radius: 20px;
@@ -294,86 +297,69 @@ button:active {
   }
 
   .mobileControls button {
-    width: 54px;
-    height: 46px;
-    background: linear-gradient(135deg, rgba(38, 55, 71, 0.86), rgba(59, 80, 99, 0.86));
+    width: 49px;
+    height: 42px;
+    background: linear-gradient(135deg, rgba(38, 55, 71, 0.88), rgba(59, 80, 99, 0.88));
     color: white;
     border: 1px solid rgba(255, 244, 220, 0.22);
-    font-size: 1rem;
-    border-radius: 15px;
+    font-size: 0.9rem;
+    border-radius: 14px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
   }
 
   #messageBox {
-    margin-top: 10px;
-    border-radius: 18px;
-    font-size: 1rem;
-    padding: 13px 15px;
+    height: 48px;
+    margin-top: 8px;
+    border-radius: 16px;
+    font-size: 0.95rem;
+    padding: 12px 14px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
-  #questText {
-    min-height: auto;
+  .bottomActionBar {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    z-index: 50;
+    background: rgba(10, 16, 22, 0.88);
+    border: 1px solid rgba(255, 244, 220, 0.16);
+    border-radius: 20px;
+    padding: 8px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.35);
   }
 
-  .statsBox {
-    grid-template-columns: 1fr 1fr;
+  .bottomActionBar button {
+    min-height: 48px;
+    padding: 8px 4px;
+    color: white;
+    background: linear-gradient(135deg, #23394b, #30536a);
+    border: 1px solid rgba(255, 244, 220, 0.12);
+    font-size: 0.78rem;
+    border-radius: 14px;
   }
 
-  .actionButtons {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .seedButtons {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-
-  .seedBtn,
-  .actionButtons button {
-    padding: 14px 10px;
-  }
-
-  .hint {
-    display: none;
+  #mobilePrayBtn {
+    background: linear-gradient(135deg, #7f5ccf, #e0b7ff);
   }
 }
 
 @media (max-width: 480px) {
-  #gameShell {
-    padding-left: 8px;
-    padding-right: 8px;
-  }
-
   .topBar h1 {
-    font-size: 1.25rem;
-  }
-
-  .topBar p {
-    font-size: 0.62rem;
+    font-size: 1.2rem;
   }
 
   #saveBtn {
-    padding: 9px 13px;
+    padding: 9px 12px;
   }
 
-  #gameCanvas {
-    height: 61vh;
-    min-height: 520px;
-    max-height: 630px;
-  }
-
-  .mobileControls {
-    left: 12px;
-    bottom: 72px;
-    padding: 7px;
-  }
-
-  .mobileControls button {
-    width: 50px;
-    height: 43px;
-    font-size: 0.95rem;
-  }
-
-  #messageBox {
-    font-size: 0.95rem;
+  .bottomActionBar button {
+    font-size: 0.72rem;
   }
 }
